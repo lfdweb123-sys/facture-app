@@ -3,100 +3,113 @@ import 'jspdf-autotable';
 
 export function generateInvoicePDF(invoiceData) {
   const doc = new jsPDF();
+  const pageW = doc.internal.pageSize.width;
   
   // En-tête
-  doc.setFontSize(24);
-  doc.setTextColor(249, 115, 22); // Orange
-  doc.text('FREELANCEPRO', 20, 20);
+  doc.setFontSize(20);
+  doc.setTextColor(17, 24, 39);
+  doc.text('Facture App', 20, 25);
   
-  doc.setFontSize(12);
-  doc.setTextColor(37, 99, 235); // Bleu
-  doc.text('Facture professionnelle', 20, 30);
+  doc.setFontSize(9);
+  doc.setTextColor(107, 114, 128);
+  doc.text('Facture professionnelle', 20, 32);
   
-  // Informations de l'entreprise
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text('FreelancePro SARL', 20, 45);
-  doc.text('Cotonou, Bénin', 20, 50);
-  doc.text('contact@freelancepro.com', 20, 55);
-  doc.text('+229 97 00 00 00', 20, 60);
+  // Émetteur
+  doc.setFontSize(8);
+  doc.setTextColor(55, 65, 81);
+  doc.text(`Émetteur : ${invoiceData.userName || 'Freelance'}`, 20, 44);
+  if (invoiceData.userEmail) doc.text(invoiceData.userEmail, 20, 49);
+  if (invoiceData.userPhone) doc.text(invoiceData.userPhone, 20, 54);
+  if (invoiceData.userCompany) doc.text(invoiceData.userCompany, 20, 59);
+  if (invoiceData.userAddress) doc.text(invoiceData.userAddress, 20, 64);
   
-  // Numéro de facture et date
-  doc.setFontSize(12);
-  doc.setTextColor(0);
+  // N° facture et dates
+  doc.setFontSize(9);
+  doc.setTextColor(17, 24, 39);
   doc.text(`Facture N° ${invoiceData.invoiceNumber}`, 140, 40);
-  doc.setFontSize(10);
-  doc.text(`Date: ${new Date(invoiceData.date).toLocaleDateString('fr-FR')}`, 140, 47);
-  doc.text(`Échéance: ${new Date(invoiceData.dueDate).toLocaleDateString('fr-FR')}`, 140, 54);
+  doc.setFontSize(8);
+  doc.setTextColor(107, 114, 128);
+  doc.text(`Date : ${new Date(invoiceData.date).toLocaleDateString('fr-FR')}`, 140, 46);
+  doc.text(`Échéance : ${new Date(invoiceData.dueDate).toLocaleDateString('fr-FR')}`, 140, 52);
   
   // Client
-  doc.setFontSize(12);
-  doc.setTextColor(0);
-  doc.text('Facturé à:', 20, 80);
-  doc.setFontSize(11);
-  doc.text(invoiceData.clientName, 20, 87);
-  doc.text(invoiceData.clientEmail, 20, 94);
-  if (invoiceData.clientAddress) {
-    doc.text(invoiceData.clientAddress, 20, 101);
-  }
+  const clientY = Math.max(72, invoiceData.userAddress ? 72 : 64);
+  doc.setFontSize(9);
+  doc.setTextColor(17, 24, 39);
+  doc.text('Client :', 20, clientY);
+  doc.setFontSize(8);
+  doc.setTextColor(55, 65, 81);
+  doc.text(invoiceData.clientName || '', 20, clientY + 6);
+  if (invoiceData.clientEmail) doc.text(invoiceData.clientEmail, 20, clientY + 11);
+  if (invoiceData.clientPhone) doc.text(invoiceData.clientPhone, 20, clientY + 16);
+  if (invoiceData.clientAddress) doc.text(invoiceData.clientAddress, 20, clientY + 21);
   
-  // Tableau des articles
-  const tableColumn = ["Description", "Qté", "Prix unitaire", "Taxe", "Total"];
-  const tableRows = invoiceData.items.map(item => [
+  // Tableau
+  const tableStart = clientY + 30;
+  const headers = [["Description", "Qté", "Prix unitaire", "Taxe", "Total"]];
+  const rows = invoiceData.items.map(item => [
     item.description,
-    item.quantity,
+    item.quantity.toString(),
     `${item.unitPrice.toLocaleString()} XOF`,
     `${item.tax}%`,
     `${(item.quantity * item.unitPrice).toLocaleString()} XOF`
   ]);
   
   doc.autoTable({
-    head: [tableColumn],
-    body: tableRows,
-    startY: 110,
+    head: headers,
+    body: rows,
+    startY: tableStart,
     theme: 'grid',
-    headStyles: {
-      fillColor: [249, 115, 22],
-      textColor: 255,
-      fontStyle: 'bold'
-    },
-    alternateRowStyles: {
-      fillColor: [240, 240, 240]
-    }
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [17, 24, 39], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [249, 250, 251] }
   });
   
-  const finalY = doc.lastAutoTable.finalY + 20;
+  const finalY = doc.lastAutoTable.finalY + 10;
   
   // Totaux
-  const subtotal = invoiceData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-  const tax = invoiceData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice * (item.tax / 100)), 0);
-  const total = subtotal + tax;
+  const subtotal = invoiceData.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const taxTotal = invoiceData.items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.tax/100), 0);
+  const total = subtotal + taxTotal;
   
-  doc.text('Sous-total:', 130, finalY);
-  doc.text(`${subtotal.toLocaleString()} XOF`, 170, finalY, { align: 'right' });
+  const colX = 130;
+  doc.setFontSize(9);
+  doc.setTextColor(107, 114, 128);
+  doc.text('Sous-total', colX, finalY);
+  doc.text(`${subtotal.toLocaleString()} XOF`, 190, finalY, { align: 'right' });
+  doc.text('TVA', colX, finalY + 7);
+  doc.text(`${taxTotal.toLocaleString()} XOF`, 190, finalY + 7, { align: 'right' });
   
-  doc.text('TVA:', 130, finalY + 7);
-  doc.text(`${tax.toLocaleString()} XOF`, 170, finalY + 7, { align: 'right' });
-  
-  doc.setFontSize(14);
+  doc.setFontSize(12);
+  doc.setTextColor(17, 24, 39);
   doc.setFont('helvetica', 'bold');
-  doc.text('TOTAL:', 130, finalY + 20);
-  doc.text(`${total.toLocaleString()} XOF`, 170, finalY + 20, { align: 'right' });
+  doc.text('TOTAL', colX, finalY + 18);
+  doc.text(`${total.toLocaleString()} XOF`, 190, finalY + 18, { align: 'right' });
   
   // Notes
   if (invoiceData.notes) {
-    doc.setFontSize(10);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100);
-    doc.text('Notes:', 20, finalY + 40);
-    doc.text(invoiceData.notes, 20, finalY + 47);
+    doc.setTextColor(107, 114, 128);
+    doc.text('Notes :', 20, finalY + 35);
+    doc.text(invoiceData.notes, 20, finalY + 41);
   }
   
-  // Pied de page
+  // Conditions
+  if (invoiceData.terms) {
+    doc.setFontSize(8);
+    doc.text('Conditions :', 20, finalY + 52);
+    doc.text(invoiceData.terms, 20, finalY + 58);
+  }
+  
+  // Signature
+  const sigY = Math.max(finalY + 75, 250);
   doc.setFontSize(8);
-  doc.setTextColor(128);
-  doc.text('FreelancePro - Solution de gestion professionnelle', 105, 285, { align: 'center' });
-  doc.text('www.freelancepro.com', 105, 290, { align: 'center' });
+  doc.setTextColor(156, 163, 175);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Facture App - Facture générée électroniquement', pageW/2, sigY, { align: 'center' });
+  doc.text(`Signé par : ${invoiceData.userName || 'Freelance'}`, pageW/2, sigY + 6, { align: 'center' });
+  doc.text('Signature automatique - Pas de signature manuscrite requise', pageW/2, sigY + 12, { align: 'center' });
   
   return doc;
 }
@@ -108,7 +121,5 @@ export function downloadInvoicePDF(invoiceData) {
 
 export function previewInvoicePDF(invoiceData) {
   const doc = generateInvoicePDF(invoiceData);
-  const pdfBlob = doc.output('blob');
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-  window.open(pdfUrl, '_blank');
+  window.open(doc.output('bloburl'), '_blank');
 }

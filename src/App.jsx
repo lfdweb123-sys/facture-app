@@ -15,6 +15,7 @@ import ContractForm from './components/contracts/ContractForm';
 import Contracts from './pages/Contracts';
 import Payments from './pages/Payments';
 import WalletPage from './pages/Wallet';
+import Verification from './pages/Verification';
 import AIChat from './components/ai/AIChat';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
@@ -27,25 +28,17 @@ function PublicRoute({ children }) {
 
 function AppContent() {
   const { user } = useAuth();
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {user && <Header />}
       <div className="flex flex-1">
         {user && <Sidebar />}
-        <main className={`flex-1 ${user ? 'ml-0 lg:ml-64 pt-16 lg:pt-0 pb-16 lg:pb-0' : ''}`}>
+        <main className={`flex-1 ${user ? 'lg:ml-64' : ''} ${user ? 'pt-16 lg:pt-0 pb-16 lg:pb-0' : ''}`}>
           <Routes>
-            {/* Page publique - Accueil */}
             <Route path="/" element={<Home />} />
-            
-            {/* Pages publiques - Auth */}
             <Route path="/login" element={<PublicRoute><LoginForm /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><RegisterForm /></PublicRoute>} />
-            
-            {/* Page publique - Paiement client */}
             <Route path="/pay" element={<Payments />} />
-            
-            {/* Pages protégées */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
             <Route path="/invoices/new" element={<ProtectedRoute><InvoiceForm /></ProtectedRoute>} />
@@ -53,11 +46,10 @@ function AppContent() {
             <Route path="/contracts/new" element={<ProtectedRoute><ContractForm /></ProtectedRoute>} />
             <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
             <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+            <Route path="/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
             <Route path="/ai-assistant" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            
-            {/* Fallback */}
             <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
           </Routes>
         </main>
@@ -68,11 +60,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return (
-    <Router>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </Router>
-  );
+  return <Router><AuthProvider><AppContent /></AuthProvider></Router>;
 }
