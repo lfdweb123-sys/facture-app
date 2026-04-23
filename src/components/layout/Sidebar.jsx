@@ -3,133 +3,112 @@ import {
   Layout,
   FileText,
   FileCheck,
+  Bot,
   User,
   Settings,
-  Bot,
-  DollarSign,
-  HelpCircle,
+  CreditCard,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  LogOut
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { logout } = useAuth();
 
   const menuItems = [
-    {
-      title: 'Dashboard',
-      icon: Layout,
-      path: '/dashboard',
-      color: 'text-orange-500'
-    },
-    {
-      title: 'Factures',
-      icon: FileText,
-      path: '/invoices',
-      color: 'text-blue-500'
-    },
-    {
-      title: 'Contrats',
-      icon: FileCheck,
-      path: '/contracts',
-      color: 'text-purple-500'
-    },
-    {
-      title: 'Assistant IA',
-      icon: Bot,
-      path: '/ai-assistant',
-      color: 'text-green-500'
-    },
-    {
-      title: 'Paiements',
-      icon: DollarSign,
-      path: '/payments',
-      color: 'text-yellow-500'
-    },
-    {
-      title: 'Profil',
-      icon: User,
-      path: '/profile',
-      color: 'text-pink-500'
-    },
-    {
-      title: 'Paramètres',
-      icon: Settings,
-      path: '/settings',
-      color: 'text-gray-500'
-    },
-    {
-      title: 'Aide',
-      icon: HelpCircle,
-      path: '/help',
-      color: 'text-indigo-500'
-    }
+    { title: 'Dashboard', icon: Layout, path: '/dashboard' },
+    { title: 'Factures', icon: FileText, path: '/invoices' },
+    { title: 'Contrats', icon: FileCheck, path: '/contracts' },
+    { title: 'Assistant IA', icon: Bot, path: '/ai-assistant' },
+    { title: 'Paiements', icon: CreditCard, path: '/invoices' },
+    { title: 'Profil', icon: User, path: '/profile' },
+    { title: 'Paramètres', icon: Settings, path: '/settings' }
   ];
 
   return (
-    <div className={`bg-white border-r border-gray-200 h-screen sticky top-16 transition-all duration-300 ${
-      collapsed ? 'w-20' : 'w-64'
-    }`}>
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-8 bg-white border border-gray-200 rounded-full p-1 shadow-md hover:shadow-lg transition-all z-10"
-      >
-        {collapsed ? (
-          <ChevronRight size={16} className="text-gray-600" />
-        ) : (
-          <ChevronLeft size={16} className="text-gray-600" />
-        )}
-      </button>
+    <>
+      {/* Mobile overlay */}
+      <div className="lg:hidden">
+        {/* Mobile sidebar trigger - handled by Header or separate button */}
+      </div>
 
-      <nav className="p-4 space-y-2 mt-4">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
+      {/* Desktop Sidebar - Fixed */}
+      <aside className={`hidden lg:flex flex-col fixed left-0 top-16 bottom-0 bg-white border-r border-gray-200 z-30 transition-all duration-300 ${
+        collapsed ? 'w-20' : 'w-64'
+      }`}>
+        {/* Toggle button */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all z-10"
+        >
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all group ${
-                isActive
-                  ? 'bg-gradient-to-r from-orange-50 to-blue-50 text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
+        {/* Navigation - Scrollable */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path || 
+              (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
+                  isActive
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                } ${collapsed ? 'justify-center' : ''}`}
+              >
+                <Icon size={20} className={isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-900'} />
+                {!collapsed && <span>{item.title}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        {!collapsed && (
+          <div className="p-3 border-t border-gray-100">
+            <button 
+              onClick={logout}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all w-full"
             >
-              <Icon
-                size={20}
-                className={`${item.color} transition-transform group-hover:scale-110`}
-              />
-              {!collapsed && (
-                <span className={`text-sm font-medium ${
-                  isActive ? 'text-gray-900' : 'text-gray-700'
-                }`}>
-                  {item.title}
-                </span>
-              )}
-              {isActive && !collapsed && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-gradient-to-r from-orange-500 to-blue-600"></div>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {!collapsed && (
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-gradient-to-r from-orange-100 to-blue-100 rounded-xl p-4">
-            <Sparkles size={20} className="text-orange-500 mb-2" />
-            <p className="text-xs text-gray-700 font-medium mb-1">Version Pro</p>
-            <p className="text-xs text-gray-600">Débloquez toutes les fonctionnalités</p>
-            <button className="mt-2 w-full bg-gradient-to-r from-orange-500 to-blue-600 text-white text-xs font-semibold py-2 px-3 rounded-lg hover:shadow-lg transition-all">
-              Upgrade
+              <LogOut size={20} />
+              Déconnexion
             </button>
           </div>
+        )}
+      </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
+        <div className="flex items-center justify-around h-16">
+          {menuItems.slice(0, 5).map((item) => {
+            const isActive = location.pathname === item.path || 
+              (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center gap-0.5 px-3 py-2 text-xs font-medium transition-all ${
+                  isActive ? 'text-gray-900' : 'text-gray-400'
+                }`}
+              >
+                <Icon size={20} />
+                <span>{item.title}</span>
+              </Link>
+            );
+          })}
         </div>
-      )}
-    </div>
+      </nav>
+    </>
   );
 }
