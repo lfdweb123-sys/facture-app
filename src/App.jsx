@@ -19,6 +19,8 @@ import Verification from './pages/Verification';
 import AIChat from './components/ai/AIChat';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import Subscription from './pages/Subscription';
+
 
 function PublicRoute({ children }) {
   const { user } = useAuth();
@@ -48,6 +50,7 @@ function AppContent() {
             <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
             <Route path="/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
             <Route path="/ai-assistant" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
+            <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />

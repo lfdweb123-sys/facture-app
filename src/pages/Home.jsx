@@ -3,86 +3,97 @@ import { useAuth } from '../context/AuthContext';
 import { 
   ArrowRight, 
   CheckCircle, 
-  Zap, 
+  FileText, 
   Shield, 
-  TrendingUp, 
   CreditCard,
-  Sparkles,
-  Users,
+  Bot,
   Star,
   Menu,
-  X
+  X,
+  Apple,
+  Smartphone,
+  ArrowUp,
+  Quote,
+  Users,
+  Zap,
+  TrendingUp
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 500);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const testimonials = [
+    { name: 'Sophie M.', role: 'Designer Freelance', text: 'Facture App a transformé ma gestion administrative. Je crée des factures en 2 minutes et mes clients paient directement en ligne.', rating: 5 },
+    { name: 'Karim D.', role: 'Développeur Web', text: 'L\'assistant IA est bluffant. Il m\'aide à rédiger des contrats professionnels sans effort. Un gain de temps énorme.', rating: 5 },
+    { name: 'Aminata S.', role: 'Consultante Marketing', text: 'Le portefeuille et les retraits sont ultra simples. Je suis mes revenus en temps réel. Application indispensable.', rating: 5 },
+    { name: 'David K.', role: 'PME - Tech Solutions', text: 'La vérification d\'identité et le suivi des paiements sont excellents. Mes clients ont confiance.', rating: 4 },
+    { name: 'Fatou B.', role: 'Graphiste', text: 'J\'envoie mes factures par email en un clic. Le design est propre et professionnel. Je recommande.', rating: 5 },
+    { name: 'Marc L.', role: 'Architecte', text: 'Les contrats générés par IA sont complets et juridiquement solides. Un vrai plus pour mon activité.', rating: 4 }
+  ];
 
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-gray-100 z-50">
+      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Sparkles className="text-white" size={18} />
+              <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                <span className="text-white text-xs font-bold">FA</span>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent">
-                FreelancePro
-              </span>
+              <span className="text-lg font-bold text-gray-900">Facture App</span>
             </div>
 
-            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm text-gray-600 hover:text-gray-900">Fonctionnalités</a>
-              <a href="#pricing" className="text-sm text-gray-600 hover:text-gray-900">Tarifs</a>
-              <a href="#testimonials" className="text-sm text-gray-600 hover:text-gray-900">Témoignages</a>
+              <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Fonctionnalités</a>
+              <a href="#pricing" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Tarifs</a>
+              <a href="#testimonials" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Avis</a>
             </div>
 
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3">
               {user ? (
-                <Link to="/dashboard" className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all">
+                <Link to="/dashboard" className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all">
                   Dashboard
                 </Link>
               ) : (
                 <>
-                  <Link to="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
-                    Connexion
-                  </Link>
-                  <Link to="/register" className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all">
+                  <Link to="/login" className="text-sm text-gray-600 hover:text-gray-900 font-medium">Connexion</Link>
+                  <Link to="/register" className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all">
                     Essai gratuit
                   </Link>
                 </>
               )}
             </div>
 
-            {/* Mobile menu button */}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2">
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-100 bg-white">
             <div className="px-4 py-4 space-y-3">
-              <a href="#features" className="block text-sm text-gray-600">Fonctionnalités</a>
-              <a href="#pricing" className="block text-sm text-gray-600">Tarifs</a>
+              <a href="#features" className="block text-sm text-gray-600 py-2">Fonctionnalités</a>
+              <a href="#pricing" className="block text-sm text-gray-600 py-2">Tarifs</a>
+              <a href="#testimonials" className="block text-sm text-gray-600 py-2">Avis</a>
               {user ? (
-                <Link to="/dashboard" className="block w-full text-center bg-gradient-to-r from-orange-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm">
-                  Dashboard
-                </Link>
+                <Link to="/dashboard" className="block w-full text-center bg-gray-900 text-white px-4 py-3 rounded-xl text-sm font-medium">Dashboard</Link>
               ) : (
-                <div className="space-y-2">
-                  <Link to="/login" className="block w-full text-center border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm">
-                    Connexion
-                  </Link>
-                  <Link to="/register" className="block w-full text-center bg-gradient-to-r from-orange-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm">
-                    Essai gratuit
-                  </Link>
+                <div className="space-y-2 pt-2 border-t border-gray-100">
+                  <Link to="/login" className="block w-full text-center border border-gray-300 text-gray-700 px-4 py-3 rounded-xl text-sm">Connexion</Link>
+                  <Link to="/register" className="block w-full text-center bg-gray-900 text-white px-4 py-3 rounded-xl text-sm">Essai gratuit</Link>
                 </div>
               )}
             </div>
@@ -91,73 +102,31 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-600 px-4 py-2 rounded-full text-sm font-medium mb-6">
-                <Zap size={16} />
-                Nouveau : Assistant IA intégré
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                Gérez votre activité de
-                <span className="bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent"> freelance </span>
-                comme un pro
-              </h1>
-              <p className="text-lg text-gray-600 mb-8 max-w-lg">
-                Factures, contrats, paiements en ligne et assistant IA. Tout ce dont vous avez besoin pour développer votre activité.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/register" className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-xl transition-all">
-                  Commencer gratuitement
-                  <ArrowRight size={20} />
-                </Link>
-                <Link to="/login" className="inline-flex items-center justify-center gap-2 border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-xl font-semibold hover:border-orange-300 transition-all">
-                  Voir la démo
-                </Link>
-              </div>
-              <div className="flex items-center gap-6 mt-8">
-                <div className="flex -space-x-2">
-                  {[1,2,3,4].map(i => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-blue-500 border-2 border-white" />
-                  ))}
-                </div>
-                <div className="text-sm text-gray-600">
-                  <span className="font-bold text-gray-900">+500</span> freelances nous font confiance
-                </div>
-              </div>
-            </div>
-
-            <div className="hidden lg:block">
-              <div className="bg-gradient-to-br from-orange-50 to-blue-50 rounded-3xl p-8 relative">
-                <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-500">Revenus ce mois</div>
-                      <div className="text-2xl font-bold text-gray-900">2 450 000 XOF</div>
-                    </div>
-                    <div className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm font-medium">+12.5%</div>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full w-3/4 bg-gradient-to-r from-orange-500 to-blue-600 rounded-full" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-                    <div>
-                      <div className="text-xs text-gray-500">Factures</div>
-                      <div className="font-bold text-gray-900">24</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500">Contrats</div>
-                      <div className="font-bold text-gray-900">8</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500">Clients</div>
-                      <div className="font-bold text-gray-900">16</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <section className="pt-28 pb-16 sm:pt-36 sm:pb-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium mb-8">
+            <Zap size={14} />
+            Assistant IA intégré · Paiements FeexPay
+          </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+            Factures, contrats et paiements{' '}
+            <span className="text-gray-900 underline decoration-gray-300 decoration-4 underline-offset-4">simplifiés</span>
+          </h1>
+          <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Créez des factures professionnelles, générez des contrats avec l'IA, encaissez des paiements en ligne. Tout ce dont votre activité a besoin.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/register" className="bg-gray-900 text-white px-8 py-4 rounded-xl font-semibold hover:bg-gray-800 transition-all inline-flex items-center justify-center gap-2">
+              Commencer gratuitement <ArrowRight size={18} />
+            </Link>
+            <a href="#features" className="border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-xl font-semibold hover:border-gray-300 transition-all inline-flex items-center justify-center">
+              Découvrir
+            </a>
+          </div>
+          <div className="flex items-center justify-center gap-4 mt-10 text-sm text-gray-500">
+            <CheckCircle size={14} className="text-emerald-500" /> Sans engagement
+            <CheckCircle size={14} className="text-emerald-500" /> Vérification sécurisée
+            <CheckCircle size={14} className="text-emerald-500" /> Support 24/7
           </div>
         </div>
       </section>
@@ -167,22 +136,21 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Tout ce dont vous avez besoin</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">Une suite complète d'outils professionnels pour gérer votre activité de A à Z</p>
+            <p className="text-gray-600 max-w-2xl mx-auto">Une suite complète pour gérer votre activité de A à Z</p>
           </div>
-
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: CreditCard, title: 'Factures Pro', desc: 'Créez des factures conformes en quelques clics. Export PDF, rappels automatiques.', color: 'from-orange-500 to-orange-600' },
-              { icon: Shield, title: 'Contrats Sécurisés', desc: 'Générez des contrats juridiques avec l\'IA. Signatures électroniques intégrées.', color: 'from-blue-500 to-blue-600' },
-              { icon: TrendingUp, title: 'Paiements en Ligne', desc: 'Acceptez Mobile Money, cartes bancaires. Paiements sécurisés avec FeexPay.', color: 'from-green-500 to-green-600' },
-              { icon: Sparkles, title: 'Assistant IA', desc: 'ChatGPT et Claude vous assistent pour toutes vos tâches administratives.', color: 'from-purple-500 to-purple-600' }
+              { icon: FileText, title: 'Factures Pro', desc: 'Créez des factures en quelques clics. Export PDF, envoi par email automatique.' },
+              { icon: Shield, title: 'Contrats IA', desc: 'Générez des contrats juridiques avec l\'intelligence artificielle.' },
+              { icon: CreditCard, title: 'Paiements', desc: 'Acceptez Mobile Money et cartes bancaires via FeexPay.' },
+              { icon: Bot, title: 'Assistant IA', desc: 'ChatGPT et Claude pour toutes vos tâches administratives.' }
             ].map((feature, index) => (
-              <div key={index} className="bg-white rounded-2xl p-6 hover:shadow-lg transition-all group">
-                <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="text-white" size={24} />
+              <div key={index} className="bg-white rounded-2xl p-6 border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all group">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gray-900 transition-colors">
+                  <feature.icon size={20} className="text-gray-700 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600 text-sm">{feature.desc}</p>
+                <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -194,80 +162,175 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Des tarifs simples</h2>
-            <p className="text-gray-600">Commencez gratuitement, passez à la version pro quand vous voulez</p>
+            <p className="text-gray-600">Commencez gratuitement, évoluez à votre rythme</p>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {/* Free */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Gratuit</h3>
-              <p className="text-gray-600 mb-6">Pour démarrer</p>
-              <div className="text-4xl font-bold text-gray-900 mb-6">0 XOF<span className="text-lg text-gray-500">/mois</span></div>
-              <ul className="space-y-3 mb-8">
-                {['5 factures/mois', '2 contrats', 'Paiements limités', 'Support email'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
-                    <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register" className="block w-full text-center border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:border-orange-300 transition-all">
-                Commencer
-              </Link>
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {/* Gratuit */}
+            <div className="bg-white border-2 border-gray-200 rounded-2xl p-8 flex flex-col">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Gratuit</h3>
+                <p className="text-gray-500 text-sm mb-6">Pour découvrir</p>
+                <div className="text-4xl font-bold text-gray-900 mb-6">0 XOF<span className="text-base text-gray-400 font-normal">/mois</span></div>
+                <ul className="space-y-3 mb-8">
+                  {['5 factures/mois', '2 contrats', 'Paiements limités', 'Assistant IA basique'].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle size={14} className="text-emerald-500 flex-shrink-0" /> {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <Link to="/register" className="mt-auto w-full text-center border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:border-gray-900 hover:text-gray-900 transition-all">Commencer</Link>
             </div>
 
             {/* Pro */}
-            <div className="bg-gradient-to-br from-orange-500 to-blue-600 rounded-2xl p-8 text-white transform scale-105">
-              <div className="bg-white/20 text-white px-3 py-1 rounded-full text-sm inline-block mb-4">Populaire</div>
-              <h3 className="text-xl font-bold mb-2">Pro</h3>
-              <p className="text-white/80 mb-6">Pour les pros</p>
-              <div className="text-4xl font-bold mb-6">9 999 XOF<span className="text-lg text-white/70">/mois</span></div>
-              <ul className="space-y-3 mb-8">
-                {['Factures illimitées', 'Contrats illimités', 'Paiements illimités', 'Assistant IA', 'Support prioritaire'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-white/90">
-                    <CheckCircle size={16} className="text-white flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register" className="block w-full text-center bg-white text-gray-900 py-3 rounded-xl font-medium hover:bg-gray-100 transition-all">
-                Essai gratuit
-              </Link>
+            <div className="bg-gray-900 rounded-2xl p-8 text-white flex flex-col relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-1 rounded-full text-xs font-bold">Populaire</div>
+              <div className="mt-2">
+                <h3 className="text-xl font-bold mb-2">Pro</h3>
+                <p className="text-gray-400 text-sm mb-6">Pour les indépendants</p>
+                <div className="text-4xl font-bold mb-6">9 999 XOF<span className="text-base text-gray-400 font-normal">/mois</span></div>
+                <ul className="space-y-3 mb-8">
+                  {['Factures illimitées', 'Contrats illimités', 'Paiements illimités', 'Assistant IA complet', 'Support prioritaire'].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-gray-300">
+                      <CheckCircle size={14} className="text-emerald-400 flex-shrink-0" /> {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <Link to="/register" className="mt-auto w-full text-center bg-white text-gray-900 py-3 rounded-xl font-medium hover:bg-gray-100 transition-all">Essai gratuit</Link>
             </div>
 
-            {/* Enterprise */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Enterprise</h3>
-              <p className="text-gray-600 mb-6">Sur mesure</p>
-              <div className="text-4xl font-bold text-gray-900 mb-6">Contact<span className="text-lg text-gray-500">-nous</span></div>
-              <ul className="space-y-3 mb-8">
-                {['Tout en Pro', 'API dédiée', 'Multi-utilisateurs', 'Formation', 'Support 24/7'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
-                    <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register" className="block w-full text-center border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:border-blue-300 transition-all">
-                Contactez-nous
-              </Link>
+            {/* Business */}
+            <div className="bg-white border-2 border-gray-200 rounded-2xl p-8 flex flex-col">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Business</h3>
+                <p className="text-gray-500 text-sm mb-6">Pour les PME</p>
+                <div className="text-4xl font-bold text-gray-900 mb-6">24 999 XOF<span className="text-base text-gray-400 font-normal">/mois</span></div>
+                <ul className="space-y-3 mb-8">
+                  {['Tout en Pro', 'Multi-utilisateurs', 'API dédiée', 'Personnalisation', 'Support dédié 24/7'].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle size={14} className="text-emerald-500 flex-shrink-0" /> {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <Link to="/register" className="mt-auto w-full text-center border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:border-gray-900 hover:text-gray-900 transition-all">Contactez-nous</Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      {/* Témoignages */}
+      <section id="testimonials" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Sparkles size={20} />
-              <span className="font-bold">FreelancePro</span>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Ce que disent nos utilisateurs</h2>
+            <p className="text-gray-600">Ils utilisent Facture App au quotidien</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {testimonials.map((t, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-sm transition-all">
+                <Quote size={24} className="text-gray-300 mb-3" />
+                <p className="text-gray-600 text-sm leading-relaxed mb-4">"{t.text}"</p>
+                <div className="flex items-center gap-1 mb-3">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <Star key={j} size={14} className={j < t.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
+                  ))}
+                </div>
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-sm font-semibold text-gray-900">{t.name}</p>
+                  <p className="text-xs text-gray-500">{t.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Télécharger l'app */}
+      <section className="py-20 bg-gray-900 text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Installez l'application</h2>
+          <p className="text-gray-400 mb-10 max-w-lg mx-auto">Disponible sur iOS et Android. Retrouvez Facture App partout avec vous.</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="#" className="inline-flex items-center justify-center gap-3 bg-white text-gray-900 px-8 py-4 rounded-xl font-semibold hover:bg-gray-100 transition-all">
+              <Apple size={24} /> App Store
+            </a>
+            <a href="#" className="inline-flex items-center justify-center gap-3 bg-gray-800 text-white px-8 py-4 rounded-xl font-semibold hover:bg-gray-700 transition-all border border-gray-700">
+              <Smartphone size={24} /> Google Play
+            </a>
+          </div>
+          <p className="text-gray-500 text-sm mt-6">Ou utilisez la version web sur tous vos appareils</p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-950 text-gray-400 pt-16 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-gray-900 text-xs font-bold">FA</span>
+                </div>
+                <span className="text-white font-bold text-lg">Facture App</span>
+              </div>
+              <p className="text-sm leading-relaxed mb-4">Solution complète de facturation, contrats et paiements pour freelances et PME.</p>
+              <div className="flex gap-3">
+                {['🇧🇯 Bénin', '🇹🇬 Togo', '🇨🇮 Côte d\'Ivoire', '🇸🇳 Sénégal'].map((c, i) => (
+                  <span key={i} className="text-xs">{c}</span>
+                ))}
+              </div>
             </div>
-            <p className="text-gray-400 text-sm">© 2024 FreelancePro. Tous droits réservés.</p>
+
+            <div>
+              <h4 className="text-white font-semibold text-sm mb-4">Produit</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#features" className="hover:text-white transition-colors">Fonctionnalités</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Tarifs</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Sécurité</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Mises à jour</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-semibold text-sm mb-4">Ressources</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Aide & Support</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">API Documentation</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Statut</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-semibold text-sm mb-4">Légal</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">Confidentialité</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Conditions d'utilisation</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Cookies</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Mentions légales</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm">© {new Date().getFullYear()} Facture App. Tous droits réservés.</p>
+            <p className="text-sm">Développé avec ❤️ depuis le Bénin</p>
           </div>
         </div>
       </footer>
+
+      {/* Retour en haut */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white w-11 h-11 rounded-xl flex items-center justify-center shadow-lg hover:bg-gray-800 transition-all animate-fade-in"
+          aria-label="Retour en haut"
+        >
+          <ArrowUp size={18} />
+        </button>
+      )}
     </div>
   );
 }
