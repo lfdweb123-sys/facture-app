@@ -236,7 +236,7 @@ export default function Home() {
           {/* LEFT */}
           <div className="fa-ani">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#FFF3EA', border: '1px solid #FFDAB8', color: '#FF6B00', fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 100, marginBottom: 26 }}>
-              <Zap size={12} /> Propulsé par IA · Paiements FeexPay intégrés
+              <Zap size={12} /> Propulsé par lfd · Paiements FeexPay intégrés
             </div>
 
             <h1 style={{ fontSize: 'clamp(38px,4.8vw,64px)', fontWeight: 900, lineHeight: 1.07, letterSpacing: '-.03em', marginBottom: 22, color: '#0A0A0A' }}>
