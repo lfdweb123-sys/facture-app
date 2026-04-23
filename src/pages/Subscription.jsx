@@ -95,7 +95,7 @@ export default function Subscription() {
     { feature: 'Assistant IA',  free: 'Basique',   pro: 'Complet',    business: 'Complet +'  },
     { feature: 'Utilisateurs',  free: '1',         pro: '1',          business: '5'          },
     { feature: 'Support',       free: 'Email',     pro: 'Prioritaire',business: 'Dédié 24/7' },
-    { feature: 'Retraits',      free: '✗',         pro: '✓',          business: '✓'          },
+    { feature: 'Retraits',      free: '✓',         pro: '✓',          business: '✓'          },
     { feature: 'API',           free: '✗',         pro: '✗',          business: '✓'          },
   ];
 

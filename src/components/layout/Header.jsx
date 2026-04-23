@@ -1,15 +1,130 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { Search, Bell, User, Settings, LogOut, ChevronDown, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { db } from '../../services/firebase';
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const searchRef = useRef(null);
+  const notifRef = useRef(null);
+
+  // Fermer les popups au clic extérieur
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Recherche en temps réel
+  useEffect(() => {
+    if (!searchQuery.trim() || !user) { setSearchResults([]); return; }
+    
+    const searchData = async () => {
+      const q = query.toLowerCase();
+      try {
+        // Rechercher dans les factures
+        const invQ = query(
+          collection(db, 'invoices'),
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc'),
+          limit(5)
+        );
+        const invSnap = await getDocs(invQ);
+        const invoices = invSnap.docs
+          .map(d => ({ id: d.id, type: 'invoice', ...d.data() }))
+          .filter(inv => 
+            (inv.clientName || '').toLowerCase().includes(q) ||
+            (inv.invoiceNumber || '').toLowerCase().includes(q)
+          );
+
+        // Rechercher dans les contrats
+        const conQ = query(
+          collection(db, 'contracts'),
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc'),
+          limit(5)
+        );
+        const conSnap = await getDocs(conQ);
+        const contracts = conSnap.docs
+          .map(d => ({ id: d.id, type: 'contract', ...d.data() }))
+          .filter(c => 
+            (c.clientName || '').toLowerCase().includes(q) ||
+            (c.title || '').toLowerCase().includes(q)
+          );
+
+        setSearchResults([...invoices, ...contracts].slice(0, 8));
+      } catch (e) {
+        console.error('Erreur recherche:', e);
+      }
+    };
+
+    const debounce = setTimeout(searchData, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, user]);
+
+  // Charger les notifications
+  useEffect(() => {
+    if (!user) return;
+    const loadNotifications = async () => {
+      try {
+        const invQ = query(
+          collection(db, 'invoices'),
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc'),
+          limit(5)
+        );
+        const snap = await getDocs(invQ);
+        const notifs = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(inv => inv.status === 'paid')
+          .map(inv => ({
+            id: inv.id,
+            title: 'Paiement reçu',
+            message: `${parseFloat(inv.total || 0).toLocaleString()} XOF de ${inv.clientName}`,
+            time: inv.paymentDate || inv.updatedAt || inv.createdAt,
+            read: false,
+            link: `/invoices`
+          }));
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter(n => !n.read).length);
+      } catch (e) { console.error('Erreur notifs:', e); }
+    };
+    loadNotifications();
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
     window.location.href = '/';
+  };
+
+  const handleSearchSelect = (item) => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    if (item.type === 'invoice') navigate('/invoices');
+    else navigate('/contracts');
+  };
+
+  const getTimeAgo = (date) => {
+    if (!date) return '';
+    const diff = Date.now() - new Date(date).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 60) return `Il y a ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Il y a ${hours}h`;
+    return `Il y a ${Math.floor(hours / 24)}j`;
   };
 
   return (
@@ -26,17 +141,147 @@ export default function Header() {
 
       {/* Right */}
       <div className="flex items-center gap-1 sm:gap-3">
-        <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors">
-          <Search size={18} />
-        </button>
-        <button className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors relative">
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+        {/* Recherche */}
+        <div ref={searchRef} className="relative">
+          <button 
+            onClick={() => { setSearchOpen(!searchOpen); setNotifOpen(false); }}
+            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <Search size={18} />
+          </button>
+
+          {searchOpen && (
+            <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+              <div className="p-3 border-b border-gray-100">
+                <div className="relative">
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Rechercher factures, contrats, clients..."
+                    className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-gray-900 outline-none"
+                    autoFocus
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                {searchQuery.trim() === '' ? (
+                  <div className="p-4 text-center text-xs text-gray-400">
+                    Tapez pour rechercher...
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-400">
+                    Aucun résultat pour "{searchQuery}"
+                  </div>
+                ) : (
+                  searchResults.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSearchSelect(item)}
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 text-left border-b border-gray-50"
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.type === 'invoice' ? 'bg-blue-50' : 'bg-purple-50'}`}>
+                        <span className={`text-xs font-bold ${item.type === 'invoice' ? 'text-blue-600' : 'text-purple-600'}`}>
+                          {item.type === 'invoice' ? 'FA' : 'CO'}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-900 truncate">
+                          {item.type === 'invoice' ? item.invoiceNumber : item.title}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">{item.clientName}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-semibold text-gray-900">
+                          {item.type === 'invoice' 
+                            ? `${parseFloat(item.total || 0).toLocaleString()} XOF`
+                            : `${parseInt(item.amount || 0).toLocaleString()} XOF`}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Notifications */}
+        <div ref={notifRef} className="relative">
+          <button 
+            onClick={() => { setNotifOpen(!notifOpen); setSearchOpen(false); }}
+            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors relative"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          {notifOpen && (
+            <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                {unreadCount > 0 && (
+                  <button 
+                    onClick={() => { setNotifications(prev => prev.map(n => ({...n, read: true}))); setUnreadCount(0); }}
+                    className="text-xs text-gray-500 hover:text-gray-900"
+                  >
+                    Tout marquer lu
+                  </button>
+                )}
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <Bell size={24} className="text-gray-300 mx-auto mb-2" />
+                    <p className="text-xs text-gray-400">Aucune notification</p>
+                    <p className="text-xs text-gray-400">Les paiements reçus apparaîtront ici</p>
+                  </div>
+                ) : (
+                  notifications.map(notif => (
+                    <Link
+                      key={notif.id}
+                      to={notif.link}
+                      onClick={() => {
+                        setNotifOpen(false);
+                        setNotifications(prev => prev.map(n => n.id === notif.id ? {...n, read: true} : n));
+                        setUnreadCount(prev => Math.max(0, prev - 1));
+                      }}
+                      className={`block px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!notif.read ? 'bg-blue-50/30' : ''}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <span className="text-emerald-600 text-xs">💰</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900">{notif.title}</p>
+                          <p className="text-xs text-gray-500 truncate">{notif.message}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{getTimeAgo(notif.time)}</p>
+                        </div>
+                        {!notif.read && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5"></div>
+                        )}
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* User */}
         <div className="relative">
-          <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 p-1.5 hover:bg-gray-800 rounded-lg transition-colors">
+          <button onClick={() => { setDropdownOpen(!dropdownOpen); setSearchOpen(false); setNotifOpen(false); }} className="flex items-center gap-2 p-1.5 hover:bg-gray-800 rounded-lg transition-colors">
             {user?.photoURL ? (
               <img src={user.photoURL} alt="" className="w-7 h-7 rounded-lg object-cover" />
             ) : (
