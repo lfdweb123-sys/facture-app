@@ -4,10 +4,12 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  signInWithPopup,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+import { auth, db, googleProvider } from '../services/firebase';
 
 const AuthContext = createContext({});
 
@@ -38,6 +40,24 @@ export function AuthProvider({ children }) {
     return result;
   };
 
+  const loginWithGoogle = async () => {
+    const result = await signInWithPopup(auth, googleProvider);
+    
+    // Créer le document utilisateur si c'est la première connexion
+    const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+    if (!userDoc.exists()) {
+      await setDoc(doc(db, 'users', result.user.uid), {
+        displayName: result.user.displayName,
+        email: result.user.email,
+        photoURL: result.user.photoURL,
+        createdAt: new Date().toISOString(),
+        role: 'user'
+      });
+    }
+    
+    return result;
+  };
+
   const register = async (email, password, userData) => {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     await setDoc(doc(db, 'users', result.user.uid), {
@@ -56,6 +76,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     login,
+    loginWithGoogle,
     register,
     logout,
     resetPassword,
