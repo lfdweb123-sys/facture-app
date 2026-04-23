@@ -503,10 +503,10 @@ export default function Home() {
         <a href="/help" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
           onMouseEnter={e => e.target.style.opacity = '0.7'}
           onMouseLeave={e => e.target.style.opacity = '1'}>Aide & Support</a>
-        <a href="#" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+        <a href="/api-documentation" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
           onMouseEnter={e => e.target.style.opacity = '0.7'}
           onMouseLeave={e => e.target.style.opacity = '1'}>API Documentation</a>
-        <a href="#" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+        <a href="/status" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
           onMouseEnter={e => e.target.style.opacity = '0.7'}
           onMouseLeave={e => e.target.style.opacity = '1'}>Statut</a>
       </div>
