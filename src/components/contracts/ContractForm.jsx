@@ -4,7 +4,7 @@ import { doc, setDoc, collection } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { askChatGPT } from '../../services/ai';
-import { sendEmail, getContractEmailTemplate } from '../../services/brevo';
+import { notifyContractCreated } from '../../services/notifications';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Wand2, Loader, FileCheck } from 'lucide-react';
 
@@ -15,32 +15,16 @@ export default function ContractForm() {
   const [generating, setGenerating] = useState(false);
 
   const [formData, setFormData] = useState({
-    title: '',
-    type: 'service',
-    customType: '',
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
-    clientAddress: '',
-    startDate: '',
-    endDate: '',
-    amount: '',
-    description: '',
-    terms: '',
-    aiGenerated: false,
-    userName: user?.displayName || '',
-    userEmail: user?.email || '',
-    userCompany: user?.company || ''
+    title: '', type: 'service', customType: '',
+    clientName: '', clientEmail: '', clientPhone: '', clientAddress: '',
+    startDate: '', endDate: '', amount: '', description: '', terms: '', aiGenerated: false,
+    userName: user?.displayName || '', userEmail: user?.email || '', userCompany: user?.company || ''
   });
 
   const contractTypes = [
-    { value: 'service', label: 'Prestation de service' },
-    { value: 'consulting', label: 'Consulting' },
-    { value: 'development', label: 'Développement web/app' },
-    { value: 'design', label: 'Design graphique' },
-    { value: 'marketing', label: 'Marketing digital' },
-    { value: 'writing', label: 'Rédaction' },
-    { value: 'other', label: 'Autre' }
+    { value: 'service', label: 'Prestation de service' }, { value: 'consulting', label: 'Consulting' },
+    { value: 'development', label: 'Développement web/app' }, { value: 'design', label: 'Design graphique' },
+    { value: 'marketing', label: 'Marketing digital' }, { value: 'writing', label: 'Rédaction' }, { value: 'other', label: 'Autre' }
   ];
 
   const generateWithAI = async () => {
@@ -48,8 +32,8 @@ export default function ContractForm() {
     setGenerating(true);
     try {
       const typeLabel = formData.type==='other' ? formData.customType : contractTypes.find(t=>t.value===formData.type)?.label;
-      const prompt = `Rédige un contrat professionnel de type "${typeLabel}" entre ${formData.userName||'le prestataire'} (prestataire) et ${formData.clientName} (client). Mission : ${formData.description}. Montant : ${formData.amount} XOF. Dates : du ${formData.startDate} au ${formData.endDate}. Inclus : objet, obligations, conditions financières, durée, confidentialité, propriété intellectuelle, résiliation, loi applicable.`;
-      const result = await askChatGPT(prompt, 'Tu es un expert juridique. Rédige en français professionnel.');
+      const prompt = `Rédige un contrat professionnel de type "${typeLabel}" entre ${formData.userName||'le prestataire'} et ${formData.clientName}. Mission : ${formData.description}. Montant : ${formData.amount} XOF. Dates : ${formData.startDate} au ${formData.endDate}. Inclus : objet, obligations, conditions financières, durée, confidentialité, propriété intellectuelle, résiliation, loi applicable.`;
+      const result = await askChatGPT(prompt, 'Expert juridique. Rédige en français professionnel.');
       setFormData({...formData, terms: result, aiGenerated: true});
       toast.success('Contrat généré !');
     } catch { toast.error('Erreur IA'); }
@@ -62,26 +46,13 @@ export default function ContractForm() {
     setLoading(true);
     try {
       const contractData = {
-        ...formData,
-        typeLabel: formData.type==='other' ? formData.customType : contractTypes.find(t=>t.value===formData.type)?.label,
+        ...formData, typeLabel: formData.type==='other' ? formData.customType : contractTypes.find(t=>t.value===formData.type)?.label,
         userId: user.uid, status: 'active', createdAt: new Date().toISOString()
       };
       const docRef = doc(collection(db, 'contracts'));
       await setDoc(docRef, contractData);
-
-      if (formData.clientEmail && formData.clientEmail.trim()) {
-        sendEmail({
-          to: formData.clientEmail,
-          toName: formData.clientName,
-          subject: `Contrat - ${formData.title || 'Nouveau contrat'}`,
-          htmlContent: getContractEmailTemplate({ ...contractData, id: docRef.id })
-        }).then(res => {
-          if (res.success) toast.success('Contrat créé et envoyé !');
-          else toast.success('Contrat créé (email non envoyé)');
-        });
-      } else {
-        toast.success('Contrat créé !');
-      }
+      await notifyContractCreated(user, { ...contractData, id: docRef.id });
+      toast.success('Contrat créé !');
       navigate('/contracts');
     } catch { toast.error('Erreur création'); }
     finally { setLoading(false); }
@@ -94,26 +65,18 @@ export default function ContractForm() {
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex items-center gap-4">
         <button onClick={()=>navigate('/contracts')} className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft size={18}/></button>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Nouveau contrat</h1>
-          <p className="text-xs text-gray-500">Remplissez ou générez avec l'IA</p>
-        </div>
+        <div><h1 className="text-xl sm:text-2xl font-bold text-gray-900">Nouveau contrat</h1><p className="text-xs text-gray-500">Remplissez ou générez avec l'IA</p></div>
       </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Type de contrat</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {contractTypes.map(t => (
-              <button key={t.value} type="button" onClick={()=>setFormData({...formData,type:t.value})}
-                className={`p-2.5 rounded-xl text-xs font-medium border transition-all ${formData.type===t.value ? 'border-gray-900 bg-gray-50 text-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                {t.label}
-              </button>
+              <button key={t.value} type="button" onClick={()=>setFormData({...formData,type:t.value})} className={`p-2.5 rounded-xl text-xs font-medium border transition-all ${formData.type===t.value ? 'border-gray-900 bg-gray-50 text-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>{t.label}</button>
             ))}
           </div>
           {formData.type==='other' && <input type="text" value={formData.customType} onChange={e=>setFormData({...formData,customType:e.target.value})} className={`${inputClass} mt-3`} placeholder="Précisez..."/>}
         </div>
-
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
             <h2 className="text-sm font-semibold text-gray-900">📤 Prestataire (vous)</h2>
@@ -124,12 +87,11 @@ export default function ContractForm() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
             <h2 className="text-sm font-semibold text-gray-900">📥 Client</h2>
             <div><label className={labelClass}>Nom *</label><input type="text" value={formData.clientName} onChange={e=>setFormData({...formData,clientName:e.target.value})} className={inputClass} required/></div>
-            <div><label className={labelClass}>Email <span className="text-gray-400 font-normal">(optionnel)</span></label><input type="email" value={formData.clientEmail} onChange={e=>setFormData({...formData,clientEmail:e.target.value})} className={inputClass} placeholder="Pour envoi automatique"/></div>
+            <div><label className={labelClass}>Email (optionnel)</label><input type="email" value={formData.clientEmail} onChange={e=>setFormData({...formData,clientEmail:e.target.value})} className={inputClass}/></div>
             <div><label className={labelClass}>Téléphone</label><input type="tel" value={formData.clientPhone} onChange={e=>setFormData({...formData,clientPhone:e.target.value})} className={inputClass}/></div>
             <div><label className={labelClass}>Adresse</label><input type="text" value={formData.clientAddress} onChange={e=>setFormData({...formData,clientAddress:e.target.value})} className={inputClass}/></div>
           </div>
         </div>
-
         <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div><label className={labelClass}>Titre *</label><input type="text" value={formData.title} onChange={e=>setFormData({...formData,title:e.target.value})} className={inputClass} required/></div>
@@ -139,7 +101,6 @@ export default function ContractForm() {
           </div>
           <div><label className={labelClass}>Description</label><textarea value={formData.description} onChange={e=>setFormData({...formData,description:e.target.value})} className={inputClass} rows="3"/></div>
         </div>
-
         <div className="bg-purple-50 rounded-2xl border border-purple-100 p-5">
           <div className="flex items-center justify-between mb-3">
             <div><h3 className="text-sm font-semibold text-gray-900">🤖 Assistant IA</h3><p className="text-xs text-gray-500">Générez les clauses</p></div>
@@ -150,12 +111,10 @@ export default function ContractForm() {
           <textarea value={formData.terms} onChange={e=>setFormData({...formData,terms:e.target.value})} className="w-full px-3 py-2.5 border border-purple-200 rounded-xl text-xs font-mono focus:ring-1 focus:ring-purple-500 outline-none bg-white" rows="10" placeholder="Termes du contrat..."/>
           {formData.aiGenerated && <p className="text-xs text-purple-600 mt-2">✨ Généré par IA - Vérifiez avant validation</p>}
         </div>
-
         <div className="bg-gray-50 rounded-2xl p-4 text-center text-xs text-gray-500">
           <p className="font-medium text-gray-700">Facture App</p>
           <p>Contrat généré électroniquement - Signé par : <span className="font-semibold text-gray-700">{formData.userName||user?.displayName||user?.email}</span></p>
         </div>
-
         <button type="submit" disabled={loading} className="w-full bg-gray-900 text-white font-medium py-3 rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
           {loading ? <><Loader className="animate-spin" size={16}/> Création...</> : <><FileCheck size={16}/> Créer le contrat</>}
         </button>
