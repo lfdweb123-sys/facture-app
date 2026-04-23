@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, app } from '../services/firebase';
 import { getAuth, updatePassword, sendEmailVerification } from 'firebase/auth';
+import { getUserRestrictions } from '../services/accessControl';
 import toast from 'react-hot-toast';
 import { 
   User, Bell, Shield, Globe, Save, Loader,
@@ -18,6 +20,7 @@ export default function Settings() {
   const [pushEnabled, setPushEnabled] = useState(false);
   
   const isGoogle = user?.providerData?.[0]?.providerId === 'google.com';
+  const restrictions = getUserRestrictions(user);
 
   const [profileSettings, setProfileSettings] = useState({
     displayName: user?.displayName || '',
@@ -109,53 +112,33 @@ export default function Settings() {
     } catch (error) { toast.error('Erreur. Vérifiez HTTPS.'); }
   };
 
-  // ─── API Key ───
   const handleGenerateApiKey = async () => {
     setApiLoading(true);
     try {
       const key = 'fa_' + Array.from({length: 64}, () => Math.random().toString(36)[2]).join('');
-      await updateDoc(doc(db, 'users', user.uid), {
-        apiKey: key,
-        apiKeyCreatedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      await updateDoc(doc(db, 'users', user.uid), { apiKey: key, apiKeyCreatedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       setApiKey(key);
       toast.success('Clé API générée !');
     } catch { toast.error('Erreur génération clé'); }
     finally { setApiLoading(false); }
   };
 
-  const handleCopyApiKey = () => {
-    navigator.clipboard.writeText(apiKey);
-    toast.success('Clé API copiée !');
-  };
+  const handleCopyApiKey = () => { navigator.clipboard.writeText(apiKey); toast.success('Clé API copiée !'); };
 
   const handleDeleteApiKey = async () => {
     if (!confirm('Révoquer cette clé API ?')) return;
-    try {
-      await updateDoc(doc(db, 'users', user.uid), { apiKey: null, updatedAt: new Date().toISOString() });
-      setApiKey('');
-      toast.success('Clé API révoquée');
-    } catch { toast.error('Erreur'); }
+    try { await updateDoc(doc(db, 'users', user.uid), { apiKey: null, updatedAt: new Date().toISOString() }); setApiKey(''); toast.success('Clé API révoquée'); }
+    catch { toast.error('Erreur'); }
   };
 
-  // ─── Webhooks ───
   const handleAddWebhook = async () => {
     if (!webhookForm.url) { toast.error('URL requise'); return; }
     setApiLoading(true);
     try {
-      const newWebhook = {
-        id: 'wh_' + Date.now(),
-        url: webhookForm.url,
-        events: webhookForm.events,
-        active: true,
-        createdAt: new Date().toISOString()
-      };
+      const newWebhook = { id: 'wh_' + Date.now(), url: webhookForm.url, events: webhookForm.events, active: true, createdAt: new Date().toISOString() };
       const updatedWebhooks = [...webhooks, newWebhook];
       await updateDoc(doc(db, 'users', user.uid), { webhooks: updatedWebhooks, updatedAt: new Date().toISOString() });
-      setWebhooks(updatedWebhooks);
-      setWebhookForm({ url: '', events: ['payment.received'] });
-      setShowWebhookForm(false);
+      setWebhooks(updatedWebhooks); setWebhookForm({ url: '', events: ['payment.received'] }); setShowWebhookForm(false);
       toast.success('Webhook ajouté !');
     } catch { toast.error('Erreur'); }
     finally { setApiLoading(false); }
@@ -168,12 +151,10 @@ export default function Settings() {
     toast.success('Webhook supprimé');
   };
 
-  const handleSaveProfile = async () => {
-    setLoading(true);
-    try { await updateDoc(doc(db, 'users', user.uid), { ...profileSettings, updatedAt: new Date().toISOString() }); toast.success('Profil enregistré'); }
-    catch { toast.error('Erreur'); }
-    finally { setLoading(false); }
-  };
+  const handleSaveProfile = async () => { setLoading(true); try { await updateDoc(doc(db, 'users', user.uid), { ...profileSettings, updatedAt: new Date().toISOString() }); toast.success('Profil enregistré'); } catch { toast.error('Erreur'); } finally { setLoading(false); } };
+  const handleSaveNotifications = async () => { setLoading(true); try { await updateDoc(doc(db, 'users', user.uid), { notificationSettings, updatedAt: new Date().toISOString() }); toast.success('Notifications enregistrées'); } catch { toast.error('Erreur'); } finally { setLoading(false); } };
+  const handleSaveInvoiceSettings = async () => { setLoading(true); try { await updateDoc(doc(db, 'users', user.uid), { invoiceSettings, updatedAt: new Date().toISOString() }); toast.success('Facturation enregistrée'); } catch { toast.error('Erreur'); } finally { setLoading(false); } };
+  const handleSaveGeneralSettings = async () => { setLoading(true); try { await updateDoc(doc(db, 'users', user.uid), { generalSettings, updatedAt: new Date().toISOString() }); toast.success('Préférences enregistrées'); } catch { toast.error('Erreur'); } finally { setLoading(false); } };
 
   const handleChangePassword = async () => {
     if (isGoogle) { toast.error('Gérez votre mot de passe dans les paramètres Google'); return; }
@@ -185,31 +166,7 @@ export default function Settings() {
     finally { setLoading(false); }
   };
 
-  const handleVerifyEmail = async () => {
-    try { await sendEmailVerification(auth.currentUser); toast.success('Email envoyé à ' + user.email); }
-    catch { toast.error('Erreur'); }
-  };
-
-  const handleSaveNotifications = async () => {
-    setLoading(true);
-    try { await updateDoc(doc(db, 'users', user.uid), { notificationSettings, updatedAt: new Date().toISOString() }); toast.success('Notifications enregistrées'); }
-    catch { toast.error('Erreur'); }
-    finally { setLoading(false); }
-  };
-
-  const handleSaveInvoiceSettings = async () => {
-    setLoading(true);
-    try { await updateDoc(doc(db, 'users', user.uid), { invoiceSettings, updatedAt: new Date().toISOString() }); toast.success('Facturation enregistrée'); }
-    catch { toast.error('Erreur'); }
-    finally { setLoading(false); }
-  };
-
-  const handleSaveGeneralSettings = async () => {
-    setLoading(true);
-    try { await updateDoc(doc(db, 'users', user.uid), { generalSettings, updatedAt: new Date().toISOString() }); toast.success('Préférences enregistrées'); }
-    catch { toast.error('Erreur'); }
-    finally { setLoading(false); }
-  };
+  const handleVerifyEmail = async () => { try { await sendEmailVerification(auth.currentUser); toast.success('Email envoyé à ' + user.email); } catch { toast.error('Erreur'); } };
 
   const tabs = [
     { id: 'profile', label: 'Profil', icon: User },
@@ -244,6 +201,7 @@ export default function Settings() {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
       <div><h1 className="text-xl sm:text-2xl font-bold text-gray-900">Paramètres</h1><p className="text-xs text-gray-500 mt-0.5">Gérez vos préférences</p></div>
+
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="border-b border-gray-100">
           <nav className="flex overflow-x-auto -mb-px">
@@ -253,6 +211,7 @@ export default function Settings() {
             })}
           </nav>
         </div>
+
         <div className="p-5 sm:p-6">
           
           {/* PROFIL */}
@@ -277,7 +236,15 @@ export default function Settings() {
                 <div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-lg flex items-center justify-center ${user?.emailVerified ? 'bg-emerald-100' : 'bg-amber-100'}`}>{user?.emailVerified ? <CheckCircle size={18} className="text-emerald-600" /> : <AlertCircle size={18} className="text-amber-600" />}</div><div><p className="text-sm font-medium">{user?.emailVerified ? 'Email vérifié' : 'Email non vérifié'}</p><p className="text-xs text-gray-500">{user?.email}</p></div></div>
                 {!user?.emailVerified && !isGoogle && <button onClick={handleVerifyEmail} className="text-sm font-medium text-gray-900 hover:underline">Vérifier</button>}
               </div>
-              {!isGoogle ? (<div className="space-y-3"><h4 className="text-sm font-semibold">Changer le mot de passe</h4><input type="password" value={passwordSettings.currentPassword} onChange={e => setPasswordSettings({...passwordSettings, currentPassword: e.target.value})} className={inputClass} placeholder="Mot de passe actuel" /><input type="password" value={passwordSettings.newPassword} onChange={e => setPasswordSettings({...passwordSettings, newPassword: e.target.value})} className={inputClass} placeholder="Nouveau mot de passe" /><input type="password" value={passwordSettings.confirmPassword} onChange={e => setPasswordSettings({...passwordSettings, confirmPassword: e.target.value})} className={inputClass} placeholder="Confirmer" /><button onClick={handleChangePassword} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm"><Key size={14} /> Mettre à jour</button></div>) : (<p className="text-xs text-gray-400">Géré par Google</p>)}
+              {!isGoogle ? (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold">Changer le mot de passe</h4>
+                  <input type="password" value={passwordSettings.currentPassword} onChange={e => setPasswordSettings({...passwordSettings, currentPassword: e.target.value})} className={inputClass} placeholder="Mot de passe actuel" />
+                  <input type="password" value={passwordSettings.newPassword} onChange={e => setPasswordSettings({...passwordSettings, newPassword: e.target.value})} className={inputClass} placeholder="Nouveau mot de passe" />
+                  <input type="password" value={passwordSettings.confirmPassword} onChange={e => setPasswordSettings({...passwordSettings, confirmPassword: e.target.value})} className={inputClass} placeholder="Confirmer" />
+                  <button onClick={handleChangePassword} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm"><Key size={14} /> Mettre à jour</button>
+                </div>
+              ) : (<p className="text-xs text-gray-400">Géré par Google</p>)}
             </div>
           )}
 
@@ -286,7 +253,7 @@ export default function Settings() {
             <div className="space-y-5">
               <div><h3 className="text-sm font-semibold">Notifications</h3></div>
               <div className="p-4 bg-gray-50 rounded-xl flex items-center justify-between"><div className="flex items-center gap-3"><Smartphone size={18} /><div><p className="text-sm font-medium">Push</p><p className="text-xs text-gray-500">{pushEnabled ? 'Activées' : 'Désactivées'}</p></div></div>{!pushEnabled ? <button onClick={handleRequestPushPermission} className="text-sm font-medium hover:underline">Activer</button> : <CheckCircle size={18} className="text-emerald-500" />}</div>
-              <div className="space-y-1">{[{ key: 'emailFactures', title: 'Factures créées', desc: 'Email' },{ key: 'emailPaiements', title: 'Paiements reçus', desc: 'Email' },{ key: 'emailContrats', title: 'Contrats créés', desc: 'Email' },{ key: 'emailRappels', title: 'Rappels', desc: 'Email' },{ key: 'pushPaiements', title: 'Push - Paiements', desc: 'Push' },{ key: 'pushFactures', title: 'Push - Factures', desc: 'Push' }].map((item) => (<div key={item.key} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl"><div><p className="text-sm font-medium">{item.title}</p></div><button onClick={() => setNotificationSettings({...notificationSettings, [item.key]: !notificationSettings[item.key]})} className={`relative w-11 h-6 rounded-full ${notificationSettings[item.key] ? 'bg-gray-900' : 'bg-gray-200'}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notificationSettings[item.key] ? 'translate-x-5' : ''}`} /></button></div>))}</div>
+              <div className="space-y-1">{[{ key: 'emailFactures', title: 'Factures créées' },{ key: 'emailPaiements', title: 'Paiements reçus' },{ key: 'emailContrats', title: 'Contrats créés' },{ key: 'emailRappels', title: 'Rappels' },{ key: 'pushPaiements', title: 'Push - Paiements' },{ key: 'pushFactures', title: 'Push - Factures' }].map((item) => (<div key={item.key} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl"><div><p className="text-sm font-medium">{item.title}</p></div><button onClick={() => setNotificationSettings({...notificationSettings, [item.key]: !notificationSettings[item.key]})} className={`relative w-11 h-6 rounded-full ${notificationSettings[item.key] ? 'bg-gray-900' : 'bg-gray-200'}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notificationSettings[item.key] ? 'translate-x-5' : ''}`} /></button></div>))}</div>
               <button onClick={handleSaveNotifications} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm">{loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer</button>
             </div>
           )}
@@ -310,76 +277,50 @@ export default function Settings() {
           {/* API & WEBHOOKS */}
           {activeTab === 'api' && (
             <div className="space-y-6">
-              {/* Clé API */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Clé API</h3>
-                <p className="text-xs text-gray-500 mb-4">Utilisez cette clé pour authentifier vos requêtes API.</p>
-                {apiKey ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono text-xs text-gray-700 truncate select-all">{apiKey}</div>
-                      <button onClick={handleCopyApiKey} className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50" title="Copier"><Copy size={14} /></button>
-                      <button onClick={handleDeleteApiKey} className="p-2.5 border border-red-200 rounded-xl hover:bg-red-50 text-red-500" title="Révoquer"><Trash2 size={14} /></button>
-                    </div>
-                    <p className="text-xs text-amber-600">Conservez cette clé en sécurité. Elle ne sera plus visible après fermeture.</p>
-                  </div>
-                ) : (
-                  <button onClick={handleGenerateApiKey} disabled={apiLoading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 flex items-center gap-2">
-                    {apiLoading ? <Loader className="animate-spin" size={14} /> : <Key size={14} />} Générer une clé API
-                  </button>
-                )}
-              </div>
-
-              {/* Webhooks */}
-              <div className="pt-6 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Webhooks</h3>
-                    <p className="text-xs text-gray-500">Recevez des notifications en temps réel</p>
-                  </div>
-                  <button onClick={() => setShowWebhookForm(!showWebhookForm)} className="text-sm font-medium text-gray-900 hover:underline flex items-center gap-1"><Plus size={14} /> Ajouter</button>
+              {!restrictions.canUseApi ? (
+                <div className="text-center py-8">
+                  <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><Code size={28} className="text-gray-400"/></div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">API réservée au plan Business</h3>
+                  <p className="text-sm text-gray-500 mb-6">Passez au plan Business pour accéder à l'API et aux webhooks.</p>
+                  <Link to="/subscription" className="bg-gray-900 text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-gray-800 inline-flex items-center gap-2"><Code size={16} /> Voir les plans</Link>
                 </div>
-
-                {showWebhookForm && (
-                  <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-3">
-                    <div>
-                      <label className={labelClass}>URL du webhook</label>
-                      <input type="url" value={webhookForm.url} onChange={e => setWebhookForm({...webhookForm, url: e.target.value})} className={inputClass} placeholder="https://votre-site.com/webhook" />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Événements</label>
-                      <div className="flex flex-wrap gap-2">
-                        {['payment.received', 'invoice.created', 'invoice.paid', 'contract.created'].map(ev => (
-                          <label key={ev} className="flex items-center gap-1.5 text-xs cursor-pointer">
-                            <input type="checkbox" checked={webhookForm.events.includes(ev)} onChange={() => setWebhookForm({...webhookForm, events: webhookForm.events.includes(ev) ? webhookForm.events.filter(e => e !== ev) : [...webhookForm.events, ev]})} className="rounded" />
-                            {ev}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={handleAddWebhook} disabled={apiLoading} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-medium">{apiLoading ? '...' : 'Ajouter'}</button>
-                      <button onClick={() => setShowWebhookForm(false)} className="px-4 py-2 text-xs text-gray-600 hover:text-gray-900">Annuler</button>
-                    </div>
-                  </div>
-                )}
-
-                {webhooks.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-4">Aucun webhook configuré.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {webhooks.map(w => (
-                      <div key={w.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">{w.url}</p>
-                          <div className="flex gap-1 mt-1">{w.events.map(e => <span key={e} className="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded">{e}</span>)}</div>
+              ) : (
+                <>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Clé API</h3>
+                    <p className="text-xs text-gray-500 mb-4">Utilisez cette clé pour authentifier vos requêtes API.</p>
+                    {apiKey ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono text-xs text-gray-700 truncate select-all">{apiKey}</div>
+                          <button onClick={handleCopyApiKey} className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50" title="Copier"><Copy size={14} /></button>
+                          <button onClick={handleDeleteApiKey} className="p-2.5 border border-red-200 rounded-xl hover:bg-red-50 text-red-500" title="Révoquer"><Trash2 size={14} /></button>
                         </div>
-                        <button onClick={() => handleDeleteWebhook(w.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                        <p className="text-xs text-amber-600">Conservez cette clé en sécurité.</p>
                       </div>
-                    ))}
+                    ) : (
+                      <button onClick={handleGenerateApiKey} disabled={apiLoading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 flex items-center gap-2">{apiLoading ? <Loader className="animate-spin" size={14} /> : <Key size={14} />} Générer une clé API</button>
+                    )}
                   </div>
-                )}
-              </div>
+
+                  <div className="pt-6 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <div><h3 className="text-sm font-semibold text-gray-900">Webhooks</h3><p className="text-xs text-gray-500">Recevez des notifications en temps réel</p></div>
+                      <button onClick={() => setShowWebhookForm(!showWebhookForm)} className="text-sm font-medium text-gray-900 hover:underline flex items-center gap-1"><Plus size={14} /> Ajouter</button>
+                    </div>
+                    {showWebhookForm && (
+                      <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-3">
+                        <div><label className={labelClass}>URL du webhook</label><input type="url" value={webhookForm.url} onChange={e => setWebhookForm({...webhookForm, url: e.target.value})} className={inputClass} placeholder="https://votre-site.com/webhook" /></div>
+                        <div><label className={labelClass}>Événements</label><div className="flex flex-wrap gap-2">{['payment.received', 'invoice.created', 'invoice.paid', 'contract.created'].map(ev => (<label key={ev} className="flex items-center gap-1.5 text-xs cursor-pointer"><input type="checkbox" checked={webhookForm.events.includes(ev)} onChange={() => setWebhookForm({...webhookForm, events: webhookForm.events.includes(ev) ? webhookForm.events.filter(e => e !== ev) : [...webhookForm.events, ev]})} className="rounded" />{ev}</label>))}</div></div>
+                        <div className="flex gap-2"><button onClick={handleAddWebhook} disabled={apiLoading} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-medium">{apiLoading ? '...' : 'Ajouter'}</button><button onClick={() => setShowWebhookForm(false)} className="px-4 py-2 text-xs text-gray-600 hover:text-gray-900">Annuler</button></div>
+                      </div>
+                    )}
+                    {webhooks.length === 0 ? (<p className="text-xs text-gray-400 py-4">Aucun webhook configuré.</p>) : (
+                      <div className="space-y-2">{webhooks.map(w => (<div key={w.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div className="min-w-0 flex-1"><p className="text-sm font-medium text-gray-900 truncate">{w.url}</p><div className="flex gap-1 mt-1">{w.events.map(e => <span key={e} className="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded">{e}</span>)}</div></div><button onClick={() => handleDeleteWebhook(w.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button></div>))}</div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
