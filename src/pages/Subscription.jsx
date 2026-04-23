@@ -4,7 +4,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { FeexPayProvider, FeexPayButton } from '@feexpay/react-sdk';
 import '@feexpay/react-sdk/style.css';
-import { CheckCircle, Shield, Zap, Crown, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Shield, Zap, Crown, ArrowLeft, X, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -22,8 +22,8 @@ export default function Subscription() {
       period: 'mois',
       features: ['5 factures/mois', '2 contrats', 'Paiements limités', 'Assistant IA basique', 'Support email'],
       icon: Zap,
-      color: 'border-gray-200',
-      popular: false
+      popular: false,
+      accentColor: '#00A550',
     },
     {
       id: 'pro',
@@ -32,8 +32,8 @@ export default function Subscription() {
       period: 'mois',
       features: ['Factures illimitées', 'Contrats illimités', 'Paiements illimités', 'Assistant IA complet', 'Support prioritaire', 'Retraits inclus'],
       icon: Crown,
-      color: 'border-gray-900 bg-gray-50',
-      popular: true
+      popular: true,
+      accentColor: '#FF6B00',
     },
     {
       id: 'business',
@@ -42,20 +42,17 @@ export default function Subscription() {
       period: 'mois',
       features: ['Tout en Pro', 'Multi-utilisateurs (5)', 'API dédiée', 'Personnalisation', 'Support dédié 24/7', 'Formation incluse'],
       icon: Shield,
-      color: 'border-gray-200',
-      popular: false
-    }
+      popular: false,
+      accentColor: '#9B00E8',
+    },
   ];
 
   const currentPlan = user?.subscription?.plan || 'free';
 
   const handleSelectPlan = (plan) => {
     setSelectedPlan(plan);
-    if (plan.price > 0) {
-      setShowPayment(true);
-    } else {
-      handleFreeSubscription();
-    }
+    if (plan.price > 0) setShowPayment(true);
+    else handleFreeSubscription();
   };
 
   const handleFreeSubscription = async () => {
@@ -63,7 +60,7 @@ export default function Subscription() {
     try {
       await updateDoc(doc(db, 'users', user.uid), {
         subscription: { plan: 'free', since: new Date().toISOString(), status: 'active' },
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
       toast.success('Abonnement gratuit activé !');
       setShowPayment(false);
@@ -81,9 +78,9 @@ export default function Subscription() {
             price: selectedPlan.price,
             since: new Date().toISOString(),
             status: 'active',
-            transactionRef: response.transaction_id
+            transactionRef: response.transaction_id,
           },
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         });
         toast.success(`Abonnement ${selectedPlan.name} activé !`);
         setShowPayment(false);
@@ -92,151 +89,247 @@ export default function Subscription() {
     }
   };
 
+  const compareRows = [
+    { feature: 'Factures',      free: '5/mois',   pro: 'Illimitées', business: 'Illimitées' },
+    { feature: 'Contrats',      free: '2',         pro: 'Illimités',  business: 'Illimités'  },
+    { feature: 'Assistant IA',  free: 'Basique',   pro: 'Complet',    business: 'Complet +'  },
+    { feature: 'Utilisateurs',  free: '1',         pro: '1',          business: '5'          },
+    { feature: 'Support',       free: 'Email',     pro: 'Prioritaire',business: 'Dédié 24/7' },
+    { feature: 'Retraits',      free: '✗',         pro: '✓',          business: '✓'          },
+    { feature: 'API',           free: '✗',         pro: '✗',          business: '✓'          },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
-        
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link to="/dashboard" className="p-2 hover:bg-white rounded-lg border border-gray-200"><ArrowLeft size={16}/></Link>
+    <div style={{ minHeight: '100vh', background: '#F7F8FC', fontFamily: "'Plus Jakarta Sans','DM Sans',sans-serif", color: '#111' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        .sub-plan-card { transition: all .25s; }
+        .sub-plan-card:hover { transform: translateY(-3px); box-shadow: 0 16px 52px rgba(0,0,0,.1); }
+        .sub-btn-outline:hover { border-color: #999 !important; color: #111 !important; }
+        .sub-btn-gold:hover { box-shadow: 0 10px 36px rgba(255,107,0,.45) !important; transform: translateY(-1px); }
+        .sub-tr:hover td { background: #FAFAFA; }
+        @media(max-width: 760px) {
+          .sub-plans-grid { grid-template-columns: 1fr !important; max-width: 400px; margin-left: auto; margin-right: auto; }
+          .sub-compare-table th:nth-child(3), .sub-compare-table th:nth-child(4),
+          .sub-compare-table td:nth-child(3), .sub-compare-table td:nth-child(4) { display: none; }
+        }
+      `}</style>
+
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 24px 80px' }}>
+
+        {/* ── HEADER ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40 }}>
+          <Link to="/dashboard" style={{
+            width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#fff', border: '1.5px solid #E5E5E5', borderRadius: 10,
+            color: '#555', textDecoration: 'none', flexShrink: 0, transition: 'all .2s',
+          }}>
+            <ArrowLeft size={16} />
+          </Link>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Abonnement</h1>
-            <p className="text-sm text-gray-500">
-              Plan actuel : <span className="font-semibold text-gray-900 capitalize">{currentPlan}</span>
+            <h1 style={{ fontSize: 22, fontWeight: 900, color: '#0A0A0A', letterSpacing: '-.02em' }}>Abonnement</h1>
+            <p style={{ fontSize: 13, color: '#999', marginTop: 2 }}>
+              Plan actuel :{' '}
+              <span style={{ fontWeight: 700, color: '#FF6B00', textTransform: 'capitalize' }}>{currentPlan}</span>
             </p>
           </div>
         </div>
 
-        {/* Plans */}
-        <div className="grid md:grid-cols-3 gap-6">
+        {/* ── SECTION TAG ── */}
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#FF6B00', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>
+            <TrendingUp size={11} /> Choisissez votre plan
+          </div>
+          <h2 style={{ fontSize: 'clamp(24px,3vw,36px)', fontWeight: 900, color: '#0A0A0A', letterSpacing: '-.025em', lineHeight: 1.1, marginBottom: 10 }}>
+            Commencez gratuitement,<br />évoluez à votre rythme
+          </h2>
+          <p style={{ fontSize: 14, color: '#888', maxWidth: 360, margin: '0 auto' }}>Sans carte bancaire requise pour démarrer.</p>
+        </div>
+
+        {/* ── PLANS GRID ── */}
+        <div className="sub-plans-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18, marginBottom: 40 }}>
           {plans.map((plan) => {
             const Icon = plan.icon;
             const isCurrent = currentPlan === plan.id;
 
             return (
-              <div key={plan.id} className={`bg-white rounded-2xl border-2 ${plan.color} p-6 flex flex-col relative ${plan.popular ? 'shadow-md' : ''}`}>
+              <div
+                key={plan.id}
+                className="sub-plan-card"
+                style={{
+                  background: '#fff',
+                  border: plan.popular ? `2px solid #FF6B00` : '1.5px solid #EBEBEB',
+                  borderRadius: 22,
+                  padding: '36px 28px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  boxShadow: plan.popular ? '0 12px 52px rgba(255,107,0,.13)' : '0 2px 12px rgba(0,0,0,.04)',
+                }}
+              >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-1.5 rounded-full text-xs font-bold">Recommandé</div>
+                  <div style={{
+                    position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)',
+                    background: 'linear-gradient(135deg,#FF6B00,#FFAA00)',
+                    color: '#fff', fontSize: 10, fontWeight: 800,
+                    padding: '4px 16px', borderRadius: 100,
+                    letterSpacing: '.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+                  }}>⚡ Le plus populaire</div>
                 )}
-                <div className={`mt-2 ${plan.popular ? 'mt-4' : ''}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center">
-                      <Icon size={18} className="text-gray-700" />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+
+                {/* Icon + name */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: `${plan.accentColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={19} style={{ color: plan.accentColor }} />
                   </div>
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold text-gray-900">{plan.price.toLocaleString()} XOF</span>
-                    <span className="text-gray-500 text-sm">/{plan.period}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.09em' }}>Plan</div>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: '#111' }}>{plan.name}</div>
                   </div>
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((f, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
-                        <CheckCircle size={14} className="text-emerald-500 flex-shrink-0" /> {f}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
-                <button
-                  onClick={() => handleSelectPlan(plan)}
-                  disabled={isCurrent || loading}
-                  className={`mt-auto w-full py-3 rounded-xl font-medium text-sm transition-all ${
-                    isCurrent
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
-                      : plan.popular
-                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                        : 'border-2 border-gray-300 text-gray-700 hover:border-gray-900'
-                  } disabled:opacity-50`}
-                >
-                  {isCurrent ? 'Plan actuel' : loading ? 'Activation...' : `Choisir ${plan.name}`}
-                </button>
+
+                {/* Price */}
+                <div style={{ marginBottom: 24 }}>
+                  <span style={{ fontSize: 34, fontWeight: 900, color: '#0A0A0A', letterSpacing: '-.02em' }}>
+                    {plan.price === 0 ? '0' : plan.price.toLocaleString()} XOF
+                  </span>
+                  <span style={{ fontSize: 13, color: '#aaa', marginLeft: 4 }}>/ {plan.period}</span>
+                </div>
+
+                <div style={{ height: 1, background: '#F0F0F0', marginBottom: 22 }} />
+
+                {/* Features */}
+                <div style={{ flex: 1, marginBottom: 28 }}>
+                  {plan.features.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: '#555', marginBottom: 12 }}>
+                      <CheckCircle size={13} style={{ color: plan.accentColor, flexShrink: 0 }} /> {f}
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                {isCurrent ? (
+                  <div style={{ textAlign: 'center', padding: '12px 20px', borderRadius: 12, background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#00A550', fontSize: 13, fontWeight: 700 }}>
+                    ✓ Plan actuel
+                  </div>
+                ) : plan.popular ? (
+                  <button
+                    onClick={() => handleSelectPlan(plan)}
+                    disabled={loading}
+                    className="sub-btn-gold"
+                    style={{ width: '100%', padding: '13px 20px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#FF6B00,#FFAA00)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 5px 20px rgba(255,107,0,.3)', transition: 'all .25s' }}
+                  >
+                    {loading && selectedPlan?.id === plan.id ? 'Activation…' : `Choisir ${plan.name}`}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSelectPlan(plan)}
+                    disabled={loading}
+                    className="sub-btn-outline"
+                    style={{ width: '100%', padding: '13px 20px', borderRadius: 12, border: '1.5px solid #DDD', background: 'transparent', color: '#555', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .25s' }}
+                  >
+                    {loading && selectedPlan?.id === plan.id ? 'Activation…' : `Choisir ${plan.name}`}
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Modal paiement */}
-        {showPayment && selectedPlan && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowPayment(false)}>
-            <div className="bg-white rounded-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Payer l'abonnement {selectedPlan.name}</h3>
-                <button onClick={() => setShowPayment(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm text-gray-500">Plan</span>
-                    <span className="text-sm font-semibold text-gray-900">{selectedPlan.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Montant</span>
-                    <span className="text-xl font-bold text-gray-900">{selectedPlan.price.toLocaleString()} XOF</span>
-                  </div>
-                </div>
-
-                <FeexPayProvider>
-                  <FeexPayButton 
-                    amount={selectedPlan.price}
-                    description={`Abonnement ${selectedPlan.name} - Facture App`}
-                    token={import.meta.env.VITE_FEEXPAY_TOKEN}
-                    id={import.meta.env.VITE_FEEXPAY_SHOP_ID}
-                    customId={`SUB-${user.uid}-${Date.now()}`}
-                    callback_info={{
-                      email: user.email,
-                      fullname: user.displayName || '',
-                      plan: selectedPlan.id
-                    }}
-                    mode="LIVE"
-                    currency="XOF"
-                    callback={handlePaymentSuccess}
-                    className="w-full bg-gray-900 text-white font-medium py-3 rounded-xl hover:bg-gray-800 transition-all text-center"
-                  />
-                </FeexPayProvider>
-
-                <p className="text-xs text-gray-400 text-center">Paiement sécurisé par FeexPay</p>
-              </div>
-            </div>
+        {/* ── COMPARISON TABLE ── */}
+        <div style={{ background: '#fff', border: '1px solid #EBEBEB', borderRadius: 20, padding: '28px', overflow: 'hidden' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#FF6B00', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 20 }}>
+            <Shield size={11} /> Comparaison des fonctionnalités
           </div>
-        )}
-
-        {/* Comparaison */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Comparaison des fonctionnalités</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX: 'auto' }}>
+            <table className="sub-compare-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left py-3 text-gray-500 font-medium">Fonctionnalité</th>
-                  <th className="text-center py-3 text-gray-500 font-medium">Gratuit</th>
-                  <th className="text-center py-3 text-gray-900 font-semibold bg-gray-50">Pro</th>
-                  <th className="text-center py-3 text-gray-500 font-medium">Business</th>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '10px 12px 14px 0', color: '#999', fontWeight: 600, borderBottom: '1px solid #F0F0F0', width: '35%' }}>Fonctionnalité</th>
+                  <th style={{ textAlign: 'center', padding: '10px 12px 14px', color: '#999', fontWeight: 600, borderBottom: '1px solid #F0F0F0' }}>Gratuit</th>
+                  <th style={{ textAlign: 'center', padding: '10px 12px 14px', color: '#FF6B00', fontWeight: 800, borderBottom: '2px solid #FF6B00', background: '#FFF8F3' }}>Pro ⚡</th>
+                  <th style={{ textAlign: 'center', padding: '10px 12px 14px', color: '#999', fontWeight: 600, borderBottom: '1px solid #F0F0F0' }}>Business</th>
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { feature: 'Factures', free: '5/mois', pro: 'Illimitées', business: 'Illimitées' },
-                  { feature: 'Contrats', free: '2', pro: 'Illimités', business: 'Illimités' },
-                  { feature: 'Assistant IA', free: 'Basique', pro: 'Complet', business: 'Complet +' },
-                  { feature: 'Utilisateurs', free: '1', pro: '1', business: '5' },
-                  { feature: 'Support', free: 'Email', pro: 'Prioritaire', business: 'Dédié 24/7' },
-                  { feature: 'Retraits', free: 'Non', pro: 'Oui', business: 'Oui' },
-                  { feature: 'API', free: 'Non', pro: 'Non', business: 'Oui' }
-                ].map((row, i) => (
-                  <tr key={i} className="border-b border-gray-50">
-                    <td className="py-3 text-gray-700">{row.feature}</td>
-                    <td className="text-center py-3 text-gray-500">{row.free}</td>
-                    <td className="text-center py-3 text-gray-900 font-medium bg-gray-50">{row.pro}</td>
-                    <td className="text-center py-3 text-gray-500">{row.business}</td>
+                {compareRows.map((row, i) => (
+                  <tr key={i} className="sub-tr" style={{ borderBottom: i < compareRows.length - 1 ? '1px solid #F5F5F5' : 'none' }}>
+                    <td style={{ padding: '13px 0', color: '#444', fontWeight: 500 }}>{row.feature}</td>
+                    <td style={{ textAlign: 'center', padding: '13px 12px', color: '#888' }}>{row.free}</td>
+                    <td style={{ textAlign: 'center', padding: '13px 12px', color: '#FF6B00', fontWeight: 700, background: '#FFF8F3' }}>{row.pro}</td>
+                    <td style={{ textAlign: 'center', padding: '13px 12px', color: '#888' }}>{row.business}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
+
       </div>
+
+      {/* ── PAYMENT MODAL ── */}
+      {showPayment && selectedPlan && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowPayment(false)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 420, boxShadow: '0 32px 90px rgba(0,0,0,.2)', overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#FF6B00', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 2 }}>Paiement</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#111' }}>Abonnement {selectedPlan.name}</div>
+              </div>
+              <button onClick={() => setShowPayment(false)} style={{ width: 34, height: 34, borderRadius: 10, border: '1.5px solid #EEE', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div style={{ padding: 24 }}>
+              {/* Summary */}
+              <div style={{ background: '#F7F8FC', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: '#888' }}>Plan</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{selectedPlan.name}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: '#888' }}>Montant</span>
+                  <span style={{ fontSize: 22, fontWeight: 900, color: '#FF6B00', letterSpacing: '-.02em' }}>{selectedPlan.price.toLocaleString()} XOF</span>
+                </div>
+                <div style={{ height: 1, background: '#EBEBEB', margin: '12px 0' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#00A550' }}>
+                  <CheckCircle size={12} /> Récurrent · {selectedPlan.period}
+                </div>
+              </div>
+
+              {/* FeexPay */}
+              <FeexPayProvider>
+                <FeexPayButton
+                  amount={selectedPlan.price}
+                  description={`Abonnement ${selectedPlan.name} - Facture App`}
+                  token={import.meta.env.VITE_FEEXPAY_TOKEN}
+                  id={import.meta.env.VITE_FEEXPAY_SHOP_ID}
+                  customId={`SUB-${user.uid}-${Date.now()}`}
+                  callback_info={{ email: user.email, fullname: user.displayName || '', plan: selectedPlan.id }}
+                  mode="LIVE"
+                  currency="XOF"
+                  callback={handlePaymentSuccess}
+                  style={{ width: '100%', padding: '14px 20px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#FF6B00,#FFAA00)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(255,107,0,.35)' }}
+                />
+              </FeexPayProvider>
+
+              <p style={{ textAlign: 'center', fontSize: 11, color: '#bbb', marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                <Shield size={11} /> Paiement sécurisé par FeexPay
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
