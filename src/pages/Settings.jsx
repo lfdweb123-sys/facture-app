@@ -1,33 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { getAuth, updatePassword, sendEmailVerification, updateEmail } from 'firebase/auth';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { app } from '../services/firebase';
+import { db, messaging } from '../services/firebase';
+import { getAuth, updatePassword, sendEmailVerification } from 'firebase/auth';
+import { getToken } from 'firebase/messaging';
 import toast from 'react-hot-toast';
 import { 
-  User, 
-  Bell, 
-  Shield, 
-  Globe,
-  Save,
-  Loader,
-  CheckCircle,
-  Mail,
-  CreditCard,
-  Key,
-  AlertCircle,
-  Smartphone
+  User, Bell, Shield, Globe, Save, Loader,
+  CheckCircle, Mail, CreditCard, Key, AlertCircle, Smartphone
 } from 'lucide-react';
-
-// Initialiser Firebase Messaging
-let messaging;
-try {
-  messaging = getMessaging(app);
-} catch (e) {
-  console.log('Messaging non supporté dans cet environnement');
-}
 
 export default function Settings() {
   const { user } = useAuth();
@@ -69,29 +50,26 @@ export default function Settings() {
     tauxTVADefaut: 18
   });
 
-  // Charger les paramètres sauvegardés
   useEffect(() => {
     const loadSettings = async () => {
       if (!user) return;
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const data = userDoc.data();
-        if (data?.settings) {
-          if (data.settings.notificationSettings) setNotificationSettings(data.settings.notificationSettings);
-          if (data.settings.invoiceSettings) setInvoiceSettings(data.settings.invoiceSettings);
-          if (data.settings.profileSettings) setProfileSettings(prev => ({...prev, ...data.settings.profileSettings}));
-        }
-      } catch (e) { /* silencieux */ }
+        if (data?.settings?.notificationSettings) setNotificationSettings(data.settings.notificationSettings);
+        if (data?.settings?.invoiceSettings) setInvoiceSettings(data.settings.invoiceSettings);
+        if (data?.settings?.profileSettings) setProfileSettings(prev => ({...prev, ...data.settings.profileSettings}));
+      } catch (e) {}
     };
     loadSettings();
   }, [user]);
 
-  // Vérifier si les notifications push sont activées
   useEffect(() => {
-    if (Notification.permission === 'granted') setPushEnabled(true);
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPushEnabled(Notification.permission === 'granted');
+    }
   }, []);
 
-  // Demander la permission pour les notifications push
   const handleRequestPushPermission = async () => {
     if (!messaging) {
       toast.error('Notifications push non supportées sur ce navigateur');
@@ -101,11 +79,14 @@ export default function Settings() {
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const token = await getToken(messaging, {
-          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
-        });
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+        if (!vapidKey) {
+          toast.error('Clé VAPID non configurée');
+          return;
+        }
         
-        // Sauvegarder le token dans Firestore
+        const token = await getToken(messaging, { vapidKey });
+        
         await updateDoc(doc(db, 'users', user.uid), {
           pushToken: token,
           updatedAt: new Date().toISOString()
@@ -113,13 +94,13 @@ export default function Settings() {
 
         setPushEnabled(true);
         setNotificationSettings(prev => ({...prev, pushPaiements: true, pushFactures: true}));
-        toast.success('Notifications push activées');
+        toast.success('Notifications push activées !');
       } else {
         toast.error('Permission refusée');
       }
     } catch (error) {
       console.error('Erreur push:', error);
-      toast.error('Erreur lors de l\'activation des notifications');
+      toast.error('Erreur lors de l\'activation. Vérifiez la clé VAPID.');
     }
   };
 
@@ -151,7 +132,6 @@ export default function Settings() {
       toast.error('6 caractères minimum');
       return;
     }
-
     setLoading(true);
     try {
       await updatePassword(auth.currentUser, passwordSettings.newPassword);
@@ -226,7 +206,6 @@ export default function Settings() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        {/* Tabs */}
         <div className="border-b border-gray-100">
           <nav className="flex overflow-x-auto -mb-px">
             {tabs.map((tab) => {
@@ -234,9 +213,7 @@ export default function Settings() {
               return (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'border-gray-900 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                    activeTab === tab.id ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}>
                   <Icon size={16} /> {tab.label}
                 </button>
@@ -260,12 +237,10 @@ export default function Settings() {
                 <div><label className={labelClass}>Téléphone</label><input type="tel" value={profileSettings.phone} onChange={e => setProfileSettings({...profileSettings, phone: e.target.value})} className={inputClass} /></div>
                 <div><label className={labelClass}>Adresse</label><input type="text" value={profileSettings.address} onChange={e => setProfileSettings({...profileSettings, address: e.target.value})} className={inputClass} /></div>
               </div>
-              <div className="pt-2">
-                <button onClick={handleSaveProfile} disabled={loading}
-                  className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center gap-2">
-                  {loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer
-                </button>
-              </div>
+              <button onClick={handleSaveProfile} disabled={loading}
+                className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center gap-2">
+                {loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer
+              </button>
             </div>
           )}
 
@@ -276,7 +251,6 @@ export default function Settings() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Sécurité du compte</h3>
                 <p className="text-xs text-gray-500">Gérez votre mot de passe et la vérification</p>
               </div>
-
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -294,7 +268,6 @@ export default function Settings() {
                   {isGoogle && <span className="text-xs text-gray-400">Géré par Google</span>}
                 </div>
               </div>
-
               {!isGoogle ? (
                 <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-gray-900">Changer le mot de passe</h4>
@@ -328,7 +301,7 @@ export default function Settings() {
                 <p className="text-xs text-gray-500">Choisissez comment recevoir vos alertes</p>
               </div>
 
-              {/* Notifications Push */}
+              {/* Push */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -339,10 +312,7 @@ export default function Settings() {
                     </div>
                   </div>
                   {!pushEnabled ? (
-                    <button onClick={handleRequestPushPermission}
-                      className="text-sm font-medium text-gray-900 hover:underline">
-                      Activer
-                    </button>
+                    <button onClick={handleRequestPushPermission} className="text-sm font-medium text-gray-900 hover:underline">Activer</button>
                   ) : (
                     <CheckCircle size={18} className="text-emerald-500" />
                   )}
@@ -393,10 +363,7 @@ export default function Settings() {
               </div>
               <div><label className={labelClass}>Notes par défaut</label><textarea value={invoiceSettings.notesDefaut} onChange={e => setInvoiceSettings({...invoiceSettings, notesDefaut: e.target.value})} className={inputClass} rows="2" /></div>
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Afficher la TVA</p>
-                  <p className="text-xs text-gray-500">Inclure le détail de la TVA sur les factures</p>
-                </div>
+                <div><p className="text-sm font-medium text-gray-900">Afficher la TVA</p></div>
                 <button onClick={() => setInvoiceSettings({...invoiceSettings, afficherTVA: !invoiceSettings.afficherTVA})}
                   className={`relative w-11 h-6 rounded-full transition-colors ${invoiceSettings.afficherTVA ? 'bg-gray-900' : 'bg-gray-200'}`}>
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${invoiceSettings.afficherTVA ? 'translate-x-5' : ''}`} />
@@ -412,47 +379,15 @@ export default function Settings() {
           {/* Général */}
           {activeTab === 'general' && (
             <div className="space-y-5">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Préférences générales</h3>
-                <p className="text-xs text-gray-500">Langue, devise et format de date</p>
-              </div>
+              <div><h3 className="text-sm font-semibold text-gray-900 mb-1">Préférences générales</h3></div>
               <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Langue</label>
-                  <select className={inputClass} defaultValue="fr">
-                    <option value="fr">Français</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Devise</label>
-                  <select className={inputClass} defaultValue="XOF">
-                    <option value="XOF">XOF - Franc CFA</option>
-                    <option value="EUR">EUR - Euro</option>
-                    <option value="USD">USD - Dollar US</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Format de date</label>
-                  <select className={inputClass} defaultValue="DD/MM/YYYY">
-                    <option value="DD/MM/YYYY">JJ/MM/AAAA</option>
-                    <option value="MM/DD/YYYY">MM/JJ/AAAA</option>
-                    <option value="YYYY-MM-DD">AAAA-MM-JJ</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Fuseau horaire</label>
-                  <select className={inputClass} defaultValue="Africa/Porto-Novo">
-                    <option value="Africa/Porto-Novo">Afrique/Porto-Novo (GMT+1)</option>
-                    <option value="UTC">UTC</option>
-                  </select>
-                </div>
+                <div><label className={labelClass}>Langue</label><select className={inputClass} defaultValue="fr"><option value="fr">Français</option></select></div>
+                <div><label className={labelClass}>Devise</label><select className={inputClass} defaultValue="XOF"><option value="XOF">XOF - Franc CFA</option></select></div>
+                <div><label className={labelClass}>Format de date</label><select className={inputClass} defaultValue="DD/MM/YYYY"><option value="DD/MM/YYYY">JJ/MM/AAAA</option></select></div>
+                <div><label className={labelClass}>Fuseau horaire</label><select className={inputClass} defaultValue="Africa/Porto-Novo"><option value="Africa/Porto-Novo">Afrique/Porto-Novo (GMT+1)</option></select></div>
               </div>
-              <div className="p-4 bg-gray-50 rounded-xl space-y-3">
-                <h4 className="text-sm font-semibold text-gray-900">Informations compte</h4>
-                <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                  <div><p className="text-gray-500">ID utilisateur</p><p className="text-gray-900 font-mono text-xs truncate">{user?.uid}</p></div>
-                  <div><p className="text-gray-500">Connexion</p><p className="text-gray-900">{isGoogle ? 'Google' : 'Email'}</p></div>
-                </div>
+              <div className="p-4 bg-gray-50 rounded-xl text-sm">
+                <div className="grid sm:grid-cols-2 gap-3"><div><p className="text-gray-500">ID</p><p className="text-gray-900 font-mono text-xs truncate">{user?.uid}</p></div><div><p className="text-gray-500">Connexion</p><p className="text-gray-900">{isGoogle ? 'Google' : 'Email'}</p></div></div>
               </div>
             </div>
           )}
