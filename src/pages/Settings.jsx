@@ -9,13 +9,14 @@ import toast from 'react-hot-toast';
 import { 
   User, Bell, Shield, Globe, Save, Loader,
   CheckCircle, Mail, CreditCard, Key, AlertCircle, Smartphone,
-  Code, Copy, Trash2, Plus, ExternalLink
+  Code, Copy, Trash2, Plus
 } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
   const auth = getAuth();
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
   const [pushEnabled, setPushEnabled] = useState(false);
   
@@ -60,30 +61,53 @@ export default function Settings() {
     fuseauHoraire: 'Africa/Porto-Novo'
   });
 
-  // API
   const [apiKey, setApiKey] = useState('');
   const [webhooks, setWebhooks] = useState([]);
   const [showWebhookForm, setShowWebhookForm] = useState(false);
   const [webhookForm, setWebhookForm] = useState({ url: '', events: ['payment.received'] });
   const [apiLoading, setApiLoading] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
+  // Charger les paramètres UNE SEULE FOIS au montage
   useEffect(() => {
     const loadSettings = async () => {
-      if (!user) return;
+      if (!user || settingsLoaded) return;
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const data = userDoc.data();
-        if (data?.settings?.notificationSettings) setNotificationSettings(data.settings.notificationSettings);
-        if (data?.settings?.invoiceSettings) setInvoiceSettings(data.settings.invoiceSettings);
-        if (data?.settings?.profileSettings) setProfileSettings(prev => ({...prev, ...data.settings.profileSettings}));
-        if (data?.settings?.generalSettings) setGeneralSettings(data.settings.generalSettings);
-        if (data?.pushEnabled !== undefined) setPushEnabled(data.pushEnabled);
-        if (data?.apiKey) setApiKey(data.apiKey);
-        if (data?.webhooks) setWebhooks(data.webhooks);
-      } catch (e) {}
+        
+        // Ne charger que si les données existent
+        if (data?.settings?.notificationSettings) {
+          setNotificationSettings(prev => ({...prev, ...data.settings.notificationSettings}));
+        }
+        if (data?.settings?.invoiceSettings) {
+          setInvoiceSettings(prev => ({...prev, ...data.settings.invoiceSettings}));
+        }
+        if (data?.settings?.profileSettings) {
+          setProfileSettings(prev => ({...prev, ...data.settings.profileSettings}));
+        }
+        if (data?.settings?.generalSettings) {
+          setGeneralSettings(prev => ({...prev, ...data.settings.generalSettings}));
+        }
+        if (data?.pushEnabled !== undefined) {
+          setPushEnabled(data.pushEnabled);
+        }
+        if (data?.apiKey) {
+          setApiKey(data.apiKey);
+        }
+        if (data?.webhooks) {
+          setWebhooks(data.webhooks);
+        }
+        
+        setSettingsLoaded(true);
+      } catch (e) {
+        console.error('Erreur chargement paramètres:', e);
+      } finally {
+        setInitialLoading(false);
+      }
     };
     loadSettings();
-  }, [user]);
+  }, [user, settingsLoaded]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -151,9 +175,20 @@ export default function Settings() {
     toast.success('Webhook supprimé');
   };
 
+  // Handlers de sauvegarde
   const handleSaveProfile = async () => { setLoading(true); try { await updateDoc(doc(db, 'users', user.uid), { ...profileSettings, updatedAt: new Date().toISOString() }); toast.success('Profil enregistré'); } catch { toast.error('Erreur'); } finally { setLoading(false); } };
-  const handleSaveNotifications = async () => { setLoading(true); try { await updateDoc(doc(db, 'users', user.uid), { notificationSettings, updatedAt: new Date().toISOString() }); toast.success('Notifications enregistrées'); } catch { toast.error('Erreur'); } finally { setLoading(false); } };
+  
+  const handleSaveNotifications = async () => { 
+    setLoading(true); 
+    try { 
+      await updateDoc(doc(db, 'users', user.uid), { notificationSettings, updatedAt: new Date().toISOString() }); 
+      toast.success('Notifications enregistrées'); 
+    } catch { toast.error('Erreur'); } 
+    finally { setLoading(false); } 
+  };
+  
   const handleSaveInvoiceSettings = async () => { setLoading(true); try { await updateDoc(doc(db, 'users', user.uid), { invoiceSettings, updatedAt: new Date().toISOString() }); toast.success('Facturation enregistrée'); } catch { toast.error('Erreur'); } finally { setLoading(false); } };
+  
   const handleSaveGeneralSettings = async () => { setLoading(true); try { await updateDoc(doc(db, 'users', user.uid), { generalSettings, updatedAt: new Date().toISOString() }); toast.success('Préférences enregistrées'); } catch { toast.error('Erreur'); } finally { setLoading(false); } };
 
   const handleChangePassword = async () => {
@@ -197,6 +232,14 @@ export default function Settings() {
     { value: 'Europe/Paris', label: 'Europe/Paris (GMT+1/+2)' }, { value: 'Europe/London', label: 'Europe/Londres (GMT)' },
     { value: 'America/New_York', label: 'Amérique/New York (GMT-5)' }, { value: 'Asia/Dubai', label: 'Asie/Dubaï (GMT+4)' }, { value: 'UTC', label: 'UTC' }
   ];
+
+  if (initialLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"/>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
@@ -253,8 +296,26 @@ export default function Settings() {
             <div className="space-y-5">
               <div><h3 className="text-sm font-semibold">Notifications</h3></div>
               <div className="p-4 bg-gray-50 rounded-xl flex items-center justify-between"><div className="flex items-center gap-3"><Smartphone size={18} /><div><p className="text-sm font-medium">Push</p><p className="text-xs text-gray-500">{pushEnabled ? 'Activées' : 'Désactivées'}</p></div></div>{!pushEnabled ? <button onClick={handleRequestPushPermission} className="text-sm font-medium hover:underline">Activer</button> : <CheckCircle size={18} className="text-emerald-500" />}</div>
-              <div className="space-y-1">{[{ key: 'emailFactures', title: 'Factures créées' },{ key: 'emailPaiements', title: 'Paiements reçus' },{ key: 'emailContrats', title: 'Contrats créés' },{ key: 'emailRappels', title: 'Rappels' },{ key: 'pushPaiements', title: 'Push - Paiements' },{ key: 'pushFactures', title: 'Push - Factures' }].map((item) => (<div key={item.key} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl"><div><p className="text-sm font-medium">{item.title}</p></div><button onClick={() => setNotificationSettings({...notificationSettings, [item.key]: !notificationSettings[item.key]})} className={`relative w-11 h-6 rounded-full ${notificationSettings[item.key] ? 'bg-gray-900' : 'bg-gray-200'}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notificationSettings[item.key] ? 'translate-x-5' : ''}`} /></button></div>))}</div>
-              <button onClick={handleSaveNotifications} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm">{loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer</button>
+              <div className="space-y-1">
+                {[
+                  { key: 'emailFactures', title: 'Factures créées' },
+                  { key: 'emailPaiements', title: 'Paiements reçus' },
+                  { key: 'emailContrats', title: 'Contrats créés' },
+                  { key: 'emailRappels', title: 'Rappels d\'échéance' },
+                  { key: 'pushPaiements', title: 'Push - Paiements' },
+                  { key: 'pushFactures', title: 'Push - Factures' }
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl">
+                    <p className="text-sm font-medium text-gray-900">{item.title}</p>
+                    <button 
+                      onClick={() => setNotificationSettings(prev => ({...prev, [item.key]: !prev[item.key]}))} 
+                      className={`relative w-11 h-6 rounded-full transition-colors ${notificationSettings[item.key] ? 'bg-gray-900' : 'bg-gray-200'}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notificationSettings[item.key] ? 'translate-x-5' : ''}`} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={handleSaveNotifications} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2">{loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer les notifications</button>
             </div>
           )}
 
@@ -268,9 +329,12 @@ export default function Settings() {
                 <div><label className={labelClass}>Préfixe</label><input type="text" value={invoiceSettings.prefixe} onChange={e => setInvoiceSettings({...invoiceSettings, prefixe: e.target.value})} className={inputClass} /></div>
                 <div><label className={labelClass}>Prochain N°</label><input type="number" value={invoiceSettings.prochainNumero} onChange={e => setInvoiceSettings({...invoiceSettings, prochainNumero: parseInt(e.target.value)||1})} className={inputClass} /></div>
               </div>
-              <div><label className={labelClass}>Notes par défaut</label><textarea value={invoiceSettings.notesDefaut} onChange={e => setInvoiceSettings({...invoiceSettings, notesDefaut: e.target.value})} className={inputClass} rows="2" /></div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"><div><p className="text-sm font-medium">Afficher la TVA</p></div><button onClick={() => setInvoiceSettings({...invoiceSettings, afficherTVA: !invoiceSettings.afficherTVA})} className={`relative w-11 h-6 rounded-full ${invoiceSettings.afficherTVA?'bg-gray-900':'bg-gray-200'}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${invoiceSettings.afficherTVA?'translate-x-5':''}`} /></button></div>
-              <button onClick={handleSaveInvoiceSettings} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm">{loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer</button>
+              <div><label className={labelClass}>Notes par défaut</label><textarea value={invoiceSettings.notesDefaut} onChange={e => setInvoiceSettings({...invoiceSettings, notesDefaut: e.target.value})} className={inputClass} rows="2" placeholder="Ex: Paiement sous 30 jours par virement bancaire" /></div>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                <div><p className="text-sm font-medium text-gray-900">Afficher la TVA</p><p className="text-xs text-gray-500">Inclure le détail de la TVA sur les factures</p></div>
+                <button onClick={() => setInvoiceSettings({...invoiceSettings, afficherTVA: !invoiceSettings.afficherTVA})} className={`relative w-11 h-6 rounded-full transition-colors ${invoiceSettings.afficherTVA?'bg-gray-900':'bg-gray-200'}`}><span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${invoiceSettings.afficherTVA?'translate-x-5':''}`} /></button>
+              </div>
+              <button onClick={handleSaveInvoiceSettings} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2">{loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer</button>
             </div>
           )}
 
@@ -282,7 +346,7 @@ export default function Settings() {
                   <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><Code size={28} className="text-gray-400"/></div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">API réservée au plan Business</h3>
                   <p className="text-sm text-gray-500 mb-6">Passez au plan Business pour accéder à l'API et aux webhooks.</p>
-                  <Link to="/subscription" className="bg-gray-900 text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-gray-800 inline-flex items-center gap-2"><Code size={16} /> Voir les plans</Link>
+                  <Link to="/subscription" className="bg-gray-900 text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-gray-800 inline-flex items-center gap-2">Voir les plans</Link>
                 </div>
               ) : (
                 <>
@@ -334,7 +398,7 @@ export default function Settings() {
                 <div><label className={labelClass}>Format date</label><select value={generalSettings.formatDate} onChange={e => setGeneralSettings({...generalSettings, formatDate: e.target.value})} className={inputClass}>{formatsDate.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}</select></div>
                 <div><label className={labelClass}>Fuseau horaire</label><select value={generalSettings.fuseauHoraire} onChange={e => setGeneralSettings({...generalSettings, fuseauHoraire: e.target.value})} className={inputClass}>{fuseaux.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}</select></div>
               </div>
-              <button onClick={handleSaveGeneralSettings} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm">{loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer</button>
+              <button onClick={handleSaveGeneralSettings} disabled={loading} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2">{loading ? <Loader className="animate-spin" size={14} /> : <Save size={14} />} Enregistrer</button>
             </div>
           )}
 
