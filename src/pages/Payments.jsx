@@ -41,7 +41,6 @@ export default function Payments() {
       setPaid(true);
       toast.success('Paiement effectué !');
 
-      // Notifier le freelance
       const invoiceSnap = await getDoc(doc(db, 'invoices', invoiceId));
       const invoiceData = invoiceSnap.data();
       if (invoiceData?.userId) {
@@ -53,38 +52,110 @@ export default function Payments() {
     } catch (err) { console.error('Erreur:', err); }
   };
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin"/></div>;
-  if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4"><div className="bg-white rounded-2xl border p-8 max-w-md text-center"><FileText size={32} className="text-red-400 mx-auto mb-3"/><h2 className="text-lg font-bold text-gray-900 mb-1">Facture introuvable</h2><p className="text-gray-500 text-sm">{error}</p></div></div>;
-  if (paid) return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4"><div className="bg-white rounded-2xl border p-8 max-w-md text-center"><CheckCircle size={40} className="text-emerald-500 mx-auto mb-3"/><h2 className="text-lg font-bold text-gray-900">Facture payée</h2><p className="text-gray-500 text-sm">Cette facture a déjà été réglée.</p></div></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin"/>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl border p-8 max-w-md w-full text-center">
+        <FileText size={40} className="text-red-400 mx-auto mb-4"/>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Facture introuvable</h2>
+        <p className="text-gray-500 text-sm">{error}</p>
+      </div>
+    </div>
+  );
+
+  if (paid) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl border p-8 max-w-md w-full text-center">
+        <CheckCircle size={48} className="text-emerald-500 mx-auto mb-4"/>
+        <h2 className="text-xl font-bold text-gray-900 mb-1">Facture payée ✅</h2>
+        <p className="text-gray-500 text-sm">Cette facture a déjà été réglée.</p>
+        <div className="bg-gray-50 rounded-xl p-4 mt-4 text-left text-sm space-y-2">
+          <div className="flex justify-between"><span className="text-gray-500">Facture</span><span className="font-medium">{invoice?.invoiceNumber}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Montant</span><span className="font-bold">{parseFloat(invoice?.total||0).toLocaleString()} XOF</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Date</span><span>{invoice?.paymentDate ? format(new Date(invoice.paymentDate), 'dd/MM/yyyy à HH:mm', { locale: fr }) : '—'}</span></div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl border border-gray-100 max-w-lg w-full overflow-hidden">
-        <div className="bg-gray-900 text-white p-5">
-          <div className="flex items-center gap-2 mb-2"><Shield size={18}/><span className="text-sm font-bold">Paiement sécurisé</span></div>
-          <p className="text-xs text-gray-400 flex items-center gap-1"><Lock size={11}/>Facture App · FeexPay</p>
-        </div>
-        <div className="p-5 space-y-4">
-          <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Facture</span><span className="font-semibold">{invoice?.invoiceNumber}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Émetteur</span><span>{invoice?.userName || 'Freelance'}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Client</span><span>{invoice?.clientName}</span></div>
-            {invoice?.items?.map((item, i) => (
-              <div key={i} className="flex justify-between text-xs"><span className="text-gray-500">{item.description} × {item.quantity}</span><span>{(item.quantity*item.unitPrice).toLocaleString()} XOF</span></div>
-            ))}
-            <div className="flex justify-between font-bold text-gray-900 pt-2 border-t"><span>Total</span><span>{parseFloat(invoice?.total||0).toLocaleString()} XOF</span></div>
+        
+        {/* Header */}
+        <div className="bg-gray-900 text-white p-6">
+          <div className="flex items-center gap-3 mb-1">
+            <Shield size={20} />
+            <h1 className="text-lg font-bold">Paiement sécurisé</h1>
           </div>
-          <FeexPayProvider>
-            <FeexPayButton 
-              amount={parseFloat(invoice?.total)||0} description={`Facture ${invoice?.invoiceNumber}`}
-              token={import.meta.env.VITE_FEEXPAY_TOKEN} id={import.meta.env.VITE_FEEXPAY_SHOP_ID}
-              customId={`PAY-${invoice?.id}-${Date.now()}`}
-              callback_info={{ email: invoice?.clientEmail||'', fullname: invoice?.clientName||'', invoiceId: invoice?.id }}
-              mode="LIVE" currency="XOF" callback={handlePaymentSuccess}
-              className="w-full bg-gray-900 text-white font-semibold py-3.5 rounded-xl hover:bg-gray-800 transition-all text-center"
-            />
-          </FeexPayProvider>
-          <p className="text-xs text-gray-400 text-center"><Lock size={11}/> Paiement sécurisé</p>
+          <p className="text-sm text-gray-400 flex items-center gap-1.5 mt-1">
+            <Lock size={12} /> Facture App · Paiement crypté par FeexPay
+          </p>
+        </div>
+
+        {/* Détail facture */}
+        <div className="p-6 space-y-4">
+          <div className="bg-gray-50 rounded-xl p-5 space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Facture</span>
+              <span className="font-semibold text-gray-900">{invoice?.invoiceNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Émetteur</span>
+              <span className="text-gray-900">{invoice?.userName || 'Freelance'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Client</span>
+              <span className="text-gray-900">{invoice?.clientName}</span>
+            </div>
+            
+            {invoice?.items?.length > 0 && (
+              <div className="pt-3 border-t border-gray-200">
+                {invoice.items.map((item, i) => (
+                  <div key={i} className="flex justify-between text-xs text-gray-600 mb-1">
+                    <span>{item.description} × {item.quantity}</span>
+                    <span>{(item.quantity * item.unitPrice).toLocaleString()} XOF</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-gray-200 flex justify-between items-baseline">
+              <span className="font-semibold text-gray-900">Total à payer</span>
+              <span className="text-xl font-bold text-gray-900">{parseFloat(invoice?.total||0).toLocaleString()} XOF</span>
+            </div>
+          </div>
+
+          {/* Bouton centré */}
+          <div className="flex justify-center">
+            <FeexPayProvider>
+              <FeexPayButton 
+                amount={parseFloat(invoice?.total)||0}
+                description={`Facture ${invoice?.invoiceNumber}`}
+                token={import.meta.env.VITE_FEEXPAY_TOKEN}
+                id={import.meta.env.VITE_FEEXPAY_SHOP_ID}
+                customId={`PAY-${invoice?.id}-${Date.now()}`}
+                callback_info={{
+                  email: invoice?.clientEmail||'',
+                  fullname: invoice?.clientName||'',
+                  invoiceId: invoice?.id
+                }}
+                mode="LIVE"
+                currency="XOF"
+                callback={handlePaymentSuccess}
+                className="bg-gray-900 text-white font-semibold py-3.5 px-10 rounded-xl hover:bg-gray-800 transition-all text-center inline-flex items-center justify-center gap-2"
+              />
+            </FeexPayProvider>
+          </div>
+
+          <p className="text-xs text-gray-400 text-center flex items-center justify-center gap-1">
+            <Lock size={11} /> Paiement sécurisé par FeexPay
+          </p>
         </div>
       </div>
     </div>
