@@ -20,7 +20,14 @@ import AIChat from './components/ai/AIChat';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Subscription from './pages/Subscription';
-
+import Security from './pages/Security';
+import Updates from './pages/Updates';
+import Blog from './pages/Blog';
+import Help from './pages/Help';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Cookies from './pages/Cookies';
+import Legal from './pages/Legal';
 
 function PublicRoute({ children }) {
   const { user } = useAuth();
@@ -37,10 +44,23 @@ function AppContent() {
         {user && <Sidebar />}
         <main className={`flex-1 ${user ? 'lg:ml-64' : ''} ${user ? 'pt-16 lg:pt-0 pb-16 lg:pb-0' : ''}`}>
           <Routes>
+            {/* Pages publiques */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<PublicRoute><LoginForm /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><RegisterForm /></PublicRoute>} />
             <Route path="/pay" element={<Payments />} />
+            
+            {/* Pages info (accessibles sans connexion) */}
+            <Route path="/security" element={<Security />} />
+            <Route path="/updates" element={<Updates />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/cookies" element={<Cookies />} />
+            <Route path="/legal" element={<Legal />} />
+            
+            {/* Pages protégées */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
             <Route path="/invoices/new" element={<ProtectedRoute><InvoiceForm /></ProtectedRoute>} />
@@ -53,6 +73,8 @@ function AppContent() {
             <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            
+            {/* Fallback */}
             <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
           </Routes>
         </main>
