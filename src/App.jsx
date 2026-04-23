@@ -28,6 +28,8 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Cookies from './pages/Cookies';
 import Legal from './pages/Legal';
+import ApiDocumentation from './pages/ApiDocumentation';
+import Status from './pages/Status';
 
 function PublicRoute({ children }) {
   const { user } = useAuth();
@@ -59,6 +61,8 @@ function AppContent() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/cookies" element={<Cookies />} />
             <Route path="/legal" element={<Legal />} />
+            <Route path="/api-documentation" element={<ApiDocumentation />} />
+            <Route path="/status" element={<Status />} />
             
             {/* Pages protégées */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
