@@ -14,18 +14,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_FIREBASE_API_KEY": "@firebase_api_key",
-    "VITE_FIREBASE_AUTH_DOMAIN": "@firebase_auth_domain",
-    "VITE_FIREBASE_PROJECT_ID": "@firebase_project_id",
-    "VITE_FIREBASE_STORAGE_BUCKET": "@firebase_storage_bucket",
-    "VITE_FIREBASE_MESSAGING_SENDER_ID": "@firebase_messaging_sender_id",
-    "VITE_FIREBASE_APP_ID": "@firebase_app_id",
-    "VITE_FEEXPAY_TOKEN": "@feexpay_token",
-    "VITE_FEEXPAY_SHOP_ID": "@feexpay_shop_id",
-    "VITE_OPENAI_API_KEY": "@openai_api_key",
-    "VITE_CLAUDE_API_KEY": "@claude_api_key",
-    "VITE_APP_URL": "@app_url"
-  }
+  ]
 }
