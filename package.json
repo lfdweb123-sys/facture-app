@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@feexpay/react-sdk": "^1.5.8",
+    "@feexpay/react-sdk": "^1.5.x",
     "@react-pdf/renderer": "^3.1.0",
     "clsx": "^2.0.0",
     "date-fns": "^3.0.0",
