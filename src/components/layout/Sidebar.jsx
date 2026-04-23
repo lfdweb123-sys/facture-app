@@ -12,7 +12,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
