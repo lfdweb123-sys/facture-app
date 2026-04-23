@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Layout, FileText, FileCheck, Bot, User, Settings, Wallet, Shield, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { Layout, FileText, FileCheck, Bot, User, Settings, Wallet, Shield, ChevronLeft, ChevronRight, LogOut, Crown } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -22,10 +22,12 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Desktop Sidebar */}
       <aside className={`hidden lg:flex flex-col fixed left-0 top-16 bottom-0 bg-white border-r border-gray-200 z-30 transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
         <button onClick={() => setCollapsed(!collapsed)} className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all z-10">
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
+        
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -62,6 +64,7 @@ export default function Sidebar() {
             </Link>
           )}
         </nav>
+        
         {!collapsed && (
           <div className="p-3 border-t border-gray-100">
             <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all w-full">
@@ -71,7 +74,7 @@ export default function Sidebar() {
         )}
       </aside>
 
-      {/* Mobile */}
+      {/* Mobile Bottom Navigation */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
         <div className="flex items-center justify-around h-16">
           {menuItems.slice(0,5).map((item) => {
