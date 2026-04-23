@@ -3,14 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
+import { askChatGPT } from '../../services/ai';
 import { sendEmail, getInvoiceEmailTemplate } from '../../services/brevo';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Sparkles, Loader } from 'lucide-react';
 
 export default function InvoiceForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
 
   const [formData, setFormData] = useState({
     userName: user?.displayName || '',
@@ -42,6 +45,56 @@ export default function InvoiceForm() {
   const taxTotal = formData.items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.tax/100), 0);
   const total = subtotal + taxTotal;
 
+  // Génération IA de la facture
+  const generateWithAI = async () => {
+    if (!aiPrompt.trim()) { toast.error('Décrivez la facture à générer'); return; }
+    setAiLoading(true);
+    try {
+      const prompt = `Génère une facture professionnelle à partir de cette description : "${aiPrompt}"
+      
+      Retourne UNIQUEMENT un objet JSON valide avec cette structure exacte, sans texte avant ni après :
+      {
+        "clientName": "Nom du client",
+        "clientEmail": "email@client.com",
+        "clientPhone": "+229...",
+        "clientAddress": "Adresse",
+        "invoiceNumber": "FACT-2026-XXX",
+        "items": [
+          {"description": "Article", "quantity": 1, "unitPrice": 50000, "tax": 0}
+        ],
+        "notes": "Notes",
+        "terms": "Conditions de paiement"
+      }
+      
+      Remplis avec des valeurs réalistes. Le montant total doit être cohérent.`;
+
+      const result = await askChatGPT(prompt, 'Tu es un assistant de facturation. Réponds UNIQUEMENT avec le JSON demandé, pas de texte autour.');
+      
+      // Nettoyer la réponse pour extraire le JSON
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) { toast.error('Format IA invalide'); return; }
+      
+      const aiData = JSON.parse(jsonMatch[0]);
+      
+      setFormData(prev => ({
+        ...prev,
+        clientName: aiData.clientName || prev.clientName,
+        clientEmail: aiData.clientEmail || prev.clientEmail,
+        clientPhone: aiData.clientPhone || prev.clientPhone,
+        clientAddress: aiData.clientAddress || prev.clientAddress,
+        invoiceNumber: aiData.invoiceNumber || prev.invoiceNumber,
+        items: aiData.items?.length ? aiData.items : prev.items,
+        notes: aiData.notes || prev.notes,
+        terms: aiData.terms || prev.terms
+      }));
+
+      toast.success('Facture générée par IA !');
+    } catch (err) {
+      console.error('Erreur IA:', err);
+      toast.error('Erreur lors de la génération IA');
+    } finally { setAiLoading(false); }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.clientName) { toast.error('Nom du client requis'); return; }
@@ -55,7 +108,6 @@ export default function InvoiceForm() {
       const docRef = doc(collection(db, 'invoices'));
       await setDoc(docRef, invoiceData);
 
-      // Envoi email si email client renseigné
       if (formData.clientEmail && formData.clientEmail.trim()) {
         const paymentLink = `${window.location.origin}/pay?invoice=${docRef.id}`;
         sendEmail({
@@ -64,7 +116,7 @@ export default function InvoiceForm() {
           subject: `Facture ${formData.invoiceNumber} - ${total.toLocaleString()} XOF`,
           htmlContent: getInvoiceEmailTemplate({ ...invoiceData, id: docRef.id }, paymentLink)
         }).then(res => {
-          if (res.success) toast.success('Facture créée et envoyée par email !');
+          if (res.success) toast.success('Facture créée et envoyée !');
           else toast.success('Facture créée (email non envoyé)');
         });
       } else {
@@ -84,7 +136,35 @@ export default function InvoiceForm() {
         <button onClick={()=>navigate('/invoices')} className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft size={18}/></button>
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Nouvelle facture</h1>
-          <p className="text-xs text-gray-500">Remplissez les informations ci-dessous</p>
+          <p className="text-xs text-gray-500">Créez manuellement ou générez avec l'IA</p>
+        </div>
+      </div>
+
+      {/* IA Generator */}
+      <div className="bg-purple-50 rounded-2xl border border-purple-100 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles size={16} className="text-purple-600"/>
+          <h3 className="text-sm font-semibold text-gray-900">Assistant IA</h3>
+          <span className="text-xs text-purple-600 font-medium">Décrivez votre facture, l'IA la génère</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={aiPrompt}
+            onChange={e=>setAiPrompt(e.target.value)}
+            placeholder="Ex: Facture de 50 000 XOF pour Simplice Akouessi, design logo et carte de visite..."
+            className="flex-1 px-3 py-2.5 border border-purple-200 rounded-xl text-sm focus:ring-1 focus:ring-purple-500 outline-none bg-white"
+            onKeyDown={e=>e.key==='Enter' && generateWithAI()}
+          />
+          <button
+            type="button"
+            onClick={generateWithAI}
+            disabled={aiLoading || !aiPrompt.trim()}
+            className="bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+          >
+            {aiLoading ? <Loader className="animate-spin" size={14}/> : <Sparkles size={14}/>}
+            {aiLoading ? 'Génération...' : 'Générer'}
+          </button>
         </div>
       </div>
 
@@ -101,11 +181,8 @@ export default function InvoiceForm() {
 
           <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
             <h2 className="text-sm font-semibold text-gray-900">📥 Client</h2>
-            <div><label className={labelClass}>Nom *</label><input type="text" value={formData.clientName} onChange={e=>setFormData({...formData,clientName:e.target.value})} className={inputClass} placeholder="Nom du client" required/></div>
-            <div>
-              <label className={labelClass}>Email <span className="text-gray-400 font-normal">(optionnel - envoi automatique)</span></label>
-              <input type="email" value={formData.clientEmail} onChange={e=>setFormData({...formData,clientEmail:e.target.value})} className={inputClass} placeholder="client@email.com"/>
-            </div>
+            <div><label className={labelClass}>Nom *</label><input type="text" value={formData.clientName} onChange={e=>setFormData({...formData,clientName:e.target.value})} className={inputClass} required/></div>
+            <div><label className={labelClass}>Email <span className="text-gray-400 font-normal">(optionnel, envoi auto)</span></label><input type="email" value={formData.clientEmail} onChange={e=>setFormData({...formData,clientEmail:e.target.value})} className={inputClass}/></div>
             <div><label className={labelClass}>Téléphone</label><input type="tel" value={formData.clientPhone} onChange={e=>setFormData({...formData,clientPhone:e.target.value})} className={inputClass}/></div>
             <div><label className={labelClass}>Adresse</label><textarea value={formData.clientAddress} onChange={e=>setFormData({...formData,clientAddress:e.target.value})} className={inputClass} rows="2"/></div>
           </div>
@@ -114,8 +191,8 @@ export default function InvoiceForm() {
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="grid sm:grid-cols-3 gap-4">
             <div><label className={labelClass}>N° Facture</label><input type="text" value={formData.invoiceNumber} onChange={e=>setFormData({...formData,invoiceNumber:e.target.value})} className={inputClass}/></div>
-            <div><label className={labelClass}>Date d'émission</label><input type="date" value={formData.date} onChange={e=>setFormData({...formData,date:e.target.value})} className={inputClass}/></div>
-            <div><label className={labelClass}>Date d'échéance</label><input type="date" value={formData.dueDate} onChange={e=>setFormData({...formData,dueDate:e.target.value})} className={inputClass}/></div>
+            <div><label className={labelClass}>Date émission</label><input type="date" value={formData.date} onChange={e=>setFormData({...formData,date:e.target.value})} className={inputClass}/></div>
+            <div><label className={labelClass}>Date échéance</label><input type="date" value={formData.dueDate} onChange={e=>setFormData({...formData,dueDate:e.target.value})} className={inputClass}/></div>
           </div>
         </div>
 

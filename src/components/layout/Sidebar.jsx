@@ -10,13 +10,13 @@ export default function Sidebar() {
   const isVerified = user?.verificationStatus === 'approved';
 
   const menuItems = [
-    { title: 'Dashboard', icon: Layout, path: '/dashboard' },
-    { title: 'Factures', icon: FileText, path: '/invoices' },
-    { title: 'Contrats', icon: FileCheck, path: '/contracts' },
-    { title: 'Portefeuille', icon: Wallet, path: '/wallet' },
-    { title: 'Assistant IA', icon: Bot, path: '/ai-assistant' },
-    { title: 'Profil', icon: User, path: '/profile' },
-    { title: 'Paramètres', icon: Settings, path: '/settings' }
+    { title: 'Dashboard', icon: Layout, path: '/dashboard', requireVerification: false },
+    { title: 'Factures', icon: FileText, path: '/invoices', requireVerification: true },
+    { title: 'Contrats', icon: FileCheck, path: '/contracts', requireVerification: true },
+    { title: 'Portefeuille', icon: Wallet, path: '/wallet', requireVerification: true },
+    { title: 'Assistant IA', icon: Bot, path: '/ai-assistant', requireVerification: false },
+    { title: 'Profil', icon: User, path: '/profile', requireVerification: false },
+    { title: 'Paramètres', icon: Settings, path: '/settings', requireVerification: false }
   ];
 
   return (
@@ -28,17 +28,33 @@ export default function Sidebar() {
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+            const isDisabled = item.requireVerification && !isVerified;
             const Icon = item.icon;
+
+            if (isDisabled) {
+              return (
+                <div key={item.path}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all opacity-40 cursor-not-allowed select-none ${collapsed ? 'justify-center' : ''}`}>
+                  <Icon size={20} className="text-gray-400" />
+                  {!collapsed && <span className="text-gray-400">{item.title}</span>}
+                  {!collapsed && <span className="ml-auto text-xs text-gray-400">🔒</span>}
+                </div>
+              );
+            }
+
             return (
-              <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} ${collapsed ? 'justify-center' : ''}`}>
+              <Link key={item.path} to={item.path}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} ${collapsed ? 'justify-center' : ''}`}>
                 <Icon size={20} />
                 {!collapsed && <span>{item.title}</span>}
               </Link>
             );
           })}
-          {/* Vérification si non vérifié */}
+          
+          {/* Vérification */}
           {!isVerified && (
-            <Link to="/verification" className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${location.pathname==='/verification' ? 'bg-amber-50 text-amber-900' : 'text-amber-600 hover:bg-amber-50'} ${collapsed ? 'justify-center' : ''}`}>
+            <Link to="/verification"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${location.pathname==='/verification' ? 'bg-amber-50 text-amber-900' : 'text-amber-600 hover:bg-amber-50'} ${collapsed ? 'justify-center' : ''}`}>
               <Shield size={20} />
               {!collapsed && <span>Vérification</span>}
               {!collapsed && user?.verificationStatus==='pending' && <span className="ml-auto w-2 h-2 bg-amber-500 rounded-full animate-pulse"/>}
@@ -53,13 +69,27 @@ export default function Sidebar() {
           </div>
         )}
       </aside>
+
+      {/* Mobile */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
         <div className="flex items-center justify-around h-16">
           {menuItems.slice(0,5).map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+            const isDisabled = item.requireVerification && !isVerified;
             const Icon = item.icon;
+
+            if (isDisabled) {
+              return (
+                <div key={item.path} className="flex flex-col items-center gap-0.5 px-3 py-2 text-xs font-medium text-gray-300 opacity-40 cursor-not-allowed">
+                  <Icon size={20} />
+                  <span className="truncate max-w-[60px]">{item.title}</span>
+                </div>
+              );
+            }
+
             return (
-              <Link key={item.path} to={item.path} className={`flex flex-col items-center gap-0.5 px-3 py-2 text-xs font-medium ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
+              <Link key={item.path} to={item.path}
+                className={`flex flex-col items-center gap-0.5 px-3 py-2 text-xs font-medium ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
                 <Icon size={20} />
                 <span className="truncate max-w-[60px]">{item.title}</span>
               </Link>
