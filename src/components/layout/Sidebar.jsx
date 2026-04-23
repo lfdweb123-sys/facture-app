@@ -6,7 +6,7 @@ import {
   Bot,
   User,
   Settings,
-  CreditCard,
+  Wallet,
   ChevronLeft,
   ChevronRight,
   LogOut
@@ -23,20 +23,15 @@ export default function Sidebar() {
     { title: 'Dashboard', icon: Layout, path: '/dashboard' },
     { title: 'Factures', icon: FileText, path: '/invoices' },
     { title: 'Contrats', icon: FileCheck, path: '/contracts' },
+    { title: 'Portefeuille', icon: Wallet, path: '/wallet' },
     { title: 'Assistant IA', icon: Bot, path: '/ai-assistant' },
-    { title: 'Paiements', icon: CreditCard, path: '/invoices' },
     { title: 'Profil', icon: User, path: '/profile' },
     { title: 'Paramètres', icon: Settings, path: '/settings' }
   ];
 
   return (
     <>
-      {/* Mobile overlay */}
-      <div className="lg:hidden">
-        {/* Mobile sidebar trigger - handled by Header or separate button */}
-      </div>
-
-      {/* Desktop Sidebar - Fixed */}
+      {/* Desktop Sidebar - Fixed, ne scroll pas */}
       <aside className={`hidden lg:flex flex-col fixed left-0 top-16 bottom-0 bg-white border-r border-gray-200 z-30 transition-all duration-300 ${
         collapsed ? 'w-20' : 'w-64'
       }`}>
@@ -48,7 +43,7 @@ export default function Sidebar() {
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
 
-        {/* Navigation - Scrollable */}
+        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || 
@@ -87,7 +82,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 safe-area-bottom">
         <div className="flex items-center justify-around h-16">
           {menuItems.slice(0, 5).map((item) => {
             const isActive = location.pathname === item.path || 
@@ -103,7 +98,7 @@ export default function Sidebar() {
                 }`}
               >
                 <Icon size={20} />
-                <span>{item.title}</span>
+                <span className="truncate max-w-[60px]">{item.title}</span>
               </Link>
             );
           })}

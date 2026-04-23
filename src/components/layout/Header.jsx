@@ -28,7 +28,7 @@ export default function Header() {
           <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
             <Sparkles className="text-white" size={16} />
           </div>
-          <span className="text-lg font-bold text-gray-900 hidden sm:block">FreelancePro</span>
+          <span className="text-lg font-bold text-gray-900 hidden sm:block">Facture app</span>
         </Link>
       </div>
 

@@ -4,7 +4,6 @@ import { useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
-import Footer from './components/layout/Footer';
 import Home from './pages/Home';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
@@ -14,6 +13,8 @@ import InvoiceForm from './components/invoices/InvoiceForm';
 import Invoices from './pages/Invoices';
 import ContractForm from './components/contracts/ContractForm';
 import Contracts from './pages/Contracts';
+import Payments from './pages/Payments';
+import WalletPage from './pages/Wallet';
 import AIChat from './components/ai/AIChat';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
@@ -32,12 +33,17 @@ function AppContent() {
       {user && <Header />}
       <div className="flex flex-1">
         {user && <Sidebar />}
-        <main className={`flex-1 ${user ? 'ml-0 lg:ml-64' : ''}`}>
+        <main className={`flex-1 ${user ? 'ml-0 lg:ml-64 pt-16 lg:pt-0 pb-16 lg:pb-0' : ''}`}>
           <Routes>
-            {/* Pages publiques */}
+            {/* Page publique - Accueil */}
             <Route path="/" element={<Home />} />
+            
+            {/* Pages publiques - Auth */}
             <Route path="/login" element={<PublicRoute><LoginForm /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><RegisterForm /></PublicRoute>} />
+            
+            {/* Page publique - Paiement client */}
+            <Route path="/pay" element={<Payments />} />
             
             {/* Pages protégées */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -45,6 +51,8 @@ function AppContent() {
             <Route path="/invoices/new" element={<ProtectedRoute><InvoiceForm /></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute><Contracts /></ProtectedRoute>} />
             <Route path="/contracts/new" element={<ProtectedRoute><ContractForm /></ProtectedRoute>} />
+            <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+            <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
             <Route path="/ai-assistant" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

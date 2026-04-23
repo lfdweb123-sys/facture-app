@@ -11,7 +11,7 @@ export default function Footer() {
             <div className="flex items-center space-x-2 mb-4">
               <Sparkles className="text-orange-500" size={24} />
               <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-blue-600 bg-clip-text text-transparent">
-                FreelancePro
+                Facture app
               </span>
             </div>
             <p className="text-gray-600 text-sm">
@@ -73,7 +73,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center space-x-2 text-sm text-gray-600">
                 <Mail size={16} />
-                <span>contact@freelancepro.com</span>
+                <span>contact@Facture app.com</span>
               </li>
               <li className="flex items-center space-x-2 text-sm text-gray-600">
                 <Phone size={16} />
@@ -91,7 +91,7 @@ export default function Footer() {
         <div className="mt-8 pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} FreelancePro. Tous droits réservés.
+              © {new Date().getFullYear()} Facture app. Tous droits réservés.
             </p>
             <div className="flex space-x-6">
               <a href="#" className="text-gray-400 hover:text-orange-500 transition-colors">
