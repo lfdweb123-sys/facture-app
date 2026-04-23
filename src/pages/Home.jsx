@@ -460,36 +460,76 @@ export default function Home() {
 <footer style={{ background: '#0A0A0F', padding: '64px 32px 36px' }}>
   <div style={{ maxWidth: 1200, margin: '0 auto' }}>
     <div className="fa-footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
+      
+      {/* Colonne 1 - Marque */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#FF6B00,#FFAA00)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#fff' }}>FA</div>
+          <div style={{ width: 34, height: 34, background: '#fff', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#0A0A0F' }}>FA</div>
           <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Facture App</span>
         </div>
         <p style={{ fontSize: 13, color: '#fff', lineHeight: 1.75, margin: '14px 0 18px' }}>
-          Solution complète de facturation, contrats IA et paiements pour freelances et PME d'Afrique de l'Ouest.
+          Solution complète de facturation, contrats IA et paiements pour freelances et PME.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {["🇧🇯 Bénin", "🇹🇬 Togo", "🇨🇮 Côte d'Ivoire", "🇸🇳 Sénégal"].map((c, i) => (
+          {["🇧🇯 Bénin", "🇧🇫 Burkina Faso", "🇨🇲 Cameroun", "🇨🇬 Congo", "🇨🇮 Côte d'Ivoire", "🇬🇦 Gabon", "🇬🇳 Guinée", "🇲🇱 Mali", "🇳🇪 Niger", "🇨🇫 RCA", "🇸🇳 Sénégal", "🇹🇩 Tchad", "🇹🇬 Togo"].map((c, i) => (
             <span key={i} style={{ fontSize: 11, color: '#fff', background: 'rgba(255,255,255,.07)', padding: '4px 10px', borderRadius: 6 }}>{c}</span>
           ))}
         </div>
       </div>
-      {[
-        { title: 'Produit', links: ['Fonctionnalités', 'Tarifs', 'Sécurité', 'Mises à jour'] },
-        { title: 'Ressources', links: ['Blog', 'Aide & Support', 'API Documentation', 'Statut'] },
-        { title: 'Légal', links: ['Confidentialité', 'CGU', 'Cookies', 'Mentions légales'] },
-      ].map((col, ci) => (
-        <div key={ci}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 18 }}>{col.title}</div>
-          {col.links.map((l, li) => (
-            <a key={li} href="#" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
-              onMouseEnter={e => e.target.style.color = 'rgba(255,255,255,.6)'}
-              onMouseLeave={e => e.target.style.color = '#fff'}
-            >{l}</a>
-          ))}
-        </div>
-      ))}
+
+      {/* Colonne 2 - Produit */}
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 18 }}>Produit</div>
+        <a href="/#features" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Fonctionnalités</a>
+        <a href="/#pricing" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Tarifs</a>
+        <a href="/security" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Sécurité</a>
+        <a href="/updates" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Mises à jour</a>
+      </div>
+
+      {/* Colonne 3 - Ressources */}
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 18 }}>Ressources</div>
+        <a href="/blog" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Blog</a>
+        <a href="/help" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Aide & Support</a>
+        <a href="#" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>API Documentation</a>
+        <a href="#" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Statut</a>
+      </div>
+
+      {/* Colonne 4 - Légal */}
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 18 }}>Légal</div>
+        <a href="/privacy" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Confidentialité</a>
+        <a href="/terms" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>CGU</a>
+        <a href="/cookies" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Cookies</a>
+        <a href="/legal" style={{ display: 'block', fontSize: 13, color: '#fff', textDecoration: 'none', marginBottom: 11 }}
+          onMouseEnter={e => e.target.style.opacity = '0.7'}
+          onMouseLeave={e => e.target.style.opacity = '1'}>Mentions légales</a>
+      </div>
     </div>
+
+    {/* Barre du bas */}
     <div style={{ borderTop: '1px solid rgba(255,255,255,.07)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
       <span style={{ fontSize: 12, color: '#fff' }}>© {new Date().getFullYear()} Facture App. Tous droits réservés.</span>
       <span style={{ fontSize: 12, color: '#fff' }}>Développé avec ❤️ depuis le Bénin</span>
