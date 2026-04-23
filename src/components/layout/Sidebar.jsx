@@ -14,7 +14,7 @@ export default function Sidebar() {
     { title: 'Factures', icon: FileText, path: '/invoices', requireVerification: true },
     { title: 'Contrats', icon: FileCheck, path: '/contracts', requireVerification: true },
     { title: 'Portefeuille', icon: Wallet, path: '/wallet', requireVerification: true },
-    { title: 'Assistant IA', icon: Bot, path: '/ai-assistant', requireVerification: false },
+    { title: 'Assistant IA', icon: Bot, path: '/ai-assistant', requireVerification: true },
     { title: 'Profil', icon: User, path: '/profile', requireVerification: false },
     { title: 'Paramètres', icon: Settings, path: '/settings', requireVerification: false }
   ];
