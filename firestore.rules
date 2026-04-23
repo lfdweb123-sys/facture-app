@@ -23,14 +23,27 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
-    // Règle par défaut : tout refuser
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-        match /conversations/{conversationId} {
+    // Règle pour les conversations
+    match /conversations/{conversationId} {
       allow read, create, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Règle pour les paiements
+    match /payments/{paymentId} {
+      allow read, create, update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Règle pour les retraits
+    match /withdrawals/{withdrawalId} {
+      allow read, create, update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Règle par défaut : tout refuser (TOUJOURS EN DERNIER)
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
