@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -17,10 +16,14 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Messaging (peut échouer en SSR ou environnements sans support)
-export let messaging = null;
-try {
-  messaging = getMessaging(app);
-} catch (e) {
-  console.warn('Firebase Messaging non disponible dans cet environnement');
+// Messaging - chargé dynamiquement pour éviter les erreurs SSR
+export async function getMessagingInstance() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const { getMessaging } = await import('firebase/messaging');
+    return getMessaging(app);
+  } catch (e) {
+    console.warn('Firebase Messaging non disponible');
+    return null;
+  }
 }
