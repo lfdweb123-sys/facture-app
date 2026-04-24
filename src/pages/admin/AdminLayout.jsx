@@ -7,8 +7,7 @@ export default function AdminLayout() {
   const menuItems = [
     { title: 'Dashboard', icon: Layout, path: '/admin' },
     { title: 'Utilisateurs', icon: Users, path: '/admin/users' },
-    { title: 'Vérifications', icon: Shield, path: '/admin/verifications' },
-    { title: 'Paramètres', icon: Settings, path: '/admin/settings' }
+    { title: 'Vérifications', icon: Shield, path: '/admin/verifications' }
   ];
 
   return (
@@ -44,9 +43,11 @@ export default function AdminLayout() {
         </div>
       </aside>
 
+      {/* Mobile */}
+      <div className="lg:hidden p-4 bg-red-600 text-white text-sm">📱 Menu admin disponible sur desktop</div>
+
       {/* Content */}
-      <div className="flex-1">
-        <div className="lg:hidden p-4 bg-red-600 text-white text-sm">📱 Admin - Menu non disponible sur mobile</div>
+      <div className="flex-1 p-4 sm:p-6">
         <Outlet />
       </div>
     </div>
