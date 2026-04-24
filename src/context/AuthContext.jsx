@@ -5,8 +5,7 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  signInWithPopup,
-  GoogleAuthProvider
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../services/firebase';
@@ -24,8 +23,20 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        setUser({ ...firebaseUser, ...userDoc.data() });
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUser({ ...firebaseUser, ...userData });
+          } else {
+            // Si le document n'existe pas (Google sign-in première fois)
+            setUser({ ...firebaseUser, role: 'user' });
+          }
+        } catch (error) {
+          console.error('Erreur chargement user:', error);
+          // En cas d'erreur, on met le user sans role (pas admin)
+          setUser({ ...firebaseUser, role: 'user' });
+        }
       } else {
         setUser(null);
       }
@@ -43,16 +54,19 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
     
-    // Créer le document utilisateur si c'est la première connexion
-    const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-    if (!userDoc.exists()) {
-      await setDoc(doc(db, 'users', result.user.uid), {
-        displayName: result.user.displayName,
-        email: result.user.email,
-        photoURL: result.user.photoURL,
-        createdAt: new Date().toISOString(),
-        role: 'user'
-      });
+    try {
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', result.user.uid), {
+          displayName: result.user.displayName,
+          email: result.user.email,
+          photoURL: result.user.photoURL,
+          createdAt: new Date().toISOString(),
+          role: 'user'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur création user Google:', error);
     }
     
     return result;
