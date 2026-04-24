@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { processPayout, checkPayoutStatus, detectCountryAndNetwork } from '../../services/feexpayPayout';
 import { sendEmail } from '../../services/brevo';
-import { CheckCircle, XCircle, Eye, RefreshCw, Settings, Search, Clock, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw, Settings, Search, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -15,7 +15,6 @@ export default function AdminPayouts() {
   const [processingId, setProcessingId] = useState(null);
   const [filter, setFilter] = useState('pending');
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(null);
   const [payoutSettings, setPayoutSettings] = useState({
     autoApproveMax: 50000,
     minBalance: 1000,
@@ -39,32 +38,44 @@ export default function AdminPayouts() {
     try {
       const snap = await getDocs(collection(db, 'settings'));
       const payoutDoc = snap.docs.find(d => d.id === 'payouts');
-      if (payoutDoc) {
+      if (payoutDoc?.exists()) {
         const data = payoutDoc.data();
         setAutoMode(data.autoMode || false);
-        setPayoutSettings(prev => ({ ...prev, ...data }));
+        setPayoutSettings(prev => ({ ...prev, autoApproveMax: data.autoApproveMax || 50000, minBalance: data.minBalance || 1000, enabledCountries: data.enabledCountries || ['bj'] }));
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error('Erreur chargement settings:', e); }
   };
 
   const saveSettings = async () => {
     try {
-      await updateDoc(doc(db, 'settings', 'payouts'), {
-        ...payoutSettings,
-        autoMode,
-        updatedAt: new Date().toISOString()
-      });
-      toast.success('Paramètres enregistrés');
-    } catch (e) {
-      // Si le doc n'existe pas, le créer
-      const { setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, 'settings', 'payouts'), {
-        ...payoutSettings,
-        autoMode,
-        createdAt: new Date().toISOString(),
+        autoApproveMax: payoutSettings.autoApproveMax,
+        minBalance: payoutSettings.minBalance,
+        enabledCountries: payoutSettings.enabledCountries,
+        autoMode: autoMode,
         updatedAt: new Date().toISOString()
-      });
-      toast.success('Paramètres créés');
+      }, { merge: true });
+      toast.success('Paramètres enregistrés');
+    } catch (error) {
+      console.error('Erreur sauvegarde settings:', error);
+      toast.error('Erreur lors de l\'enregistrement');
+    }
+  };
+
+  // Sauvegarder autoMode dès qu'il change
+  const toggleAutoMode = async () => {
+    const newMode = !autoMode;
+    setAutoMode(newMode);
+    try {
+      await setDoc(doc(db, 'settings', 'payouts'), {
+        autoMode: newMode,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      toast.success(newMode ? 'Mode automatique activé' : 'Mode manuel activé');
+    } catch (error) {
+      console.error('Erreur sauvegarde autoMode:', error);
+      setAutoMode(!newMode); // Revenir en arrière si erreur
+      toast.error('Erreur lors de l\'enregistrement');
     }
   };
 
@@ -74,10 +85,8 @@ export default function AdminPayouts() {
     if (!w) return;
 
     try {
-      // Détecter pays et réseau
       const { country, network } = detectCountryAndNetwork(w.phone);
 
-      // Effectuer le payout
       const result = await processPayout({
         phoneNumber: w.phone,
         amount: w.amount,
@@ -88,7 +97,6 @@ export default function AdminPayouts() {
       });
 
       if (result.success) {
-        // Mettre à jour le retrait
         await updateDoc(doc(db, 'withdrawals', withdrawalId), {
           status: result.status === 'SUCCESSFUL' ? 'completed' : 'pending',
           payoutRef: result.reference,
@@ -99,7 +107,6 @@ export default function AdminPayouts() {
           network
         });
 
-        // Envoyer email
         if (w.userEmail) {
           await sendEmail({
             to: w.userEmail,
@@ -143,15 +150,6 @@ export default function AdminPayouts() {
     toast.success('Retrait rejeté');
   };
 
-  // Auto-traitement
-  useEffect(() => {
-    if (!autoMode) return;
-    const pending = withdrawals.filter(w => w.status === 'pending' && w.amount <= payoutSettings.autoApproveMax);
-    if (pending.length > 0) {
-      handleProcessPayout(pending[0].id);
-    }
-  }, [autoMode, withdrawals]);
-
   const filtered = withdrawals.filter(w => {
     const s = search.toLowerCase();
     const match = !s || (w.name||'').toLowerCase().includes(s) || (w.phone||'').includes(s);
@@ -162,20 +160,18 @@ export default function AdminPayouts() {
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Gestion des retraits</h1>
           <p className="text-xs text-gray-500">{withdrawals.length} retraits • {withdrawals.filter(w=>w.status==='pending').length} en attente</p>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <span className="text-gray-600">Auto</span>
-            <button onClick={() => setAutoMode(!autoMode)} className={`relative w-11 h-6 rounded-full transition-colors ${autoMode ? 'bg-emerald-600' : 'bg-gray-200'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoMode ? 'translate-x-5' : ''}`} />
-            </button>
-          </label>
-        </div>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <span className="text-gray-600">Auto</span>
+          <button onClick={toggleAutoMode} className={`relative w-11 h-6 rounded-full transition-colors ${autoMode ? 'bg-emerald-600' : 'bg-gray-200'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${autoMode ? 'translate-x-5' : ''}`} />
+          </button>
+        </label>
       </div>
 
       {/* Paramètres */}
