@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Search, Bell, User, Settings, LogOut, ChevronDown, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 
 export default function Header() {
@@ -13,12 +13,12 @@ export default function Header() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const searchRef = useRef(null);
   const notifRef = useRef(null);
 
-  // Fermer les popups au clic extérieur
   useEffect(() => {
     const handleClick = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
@@ -28,21 +28,19 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Recherche en temps réel
+  // Recherche sans orderBy pour éviter l'erreur d'index
   useEffect(() => {
     if (!searchQuery.trim() || !user) { setSearchResults([]); return; }
     
     const searchData = async () => {
-      const q = query.toLowerCase();
+      setSearchLoading(true);
+      const q = searchQuery.toLowerCase();
       try {
-        // Rechercher dans les factures
-        const invQ = query(
-          collection(db, 'invoices'),
-          where('userId', '==', user.uid),
-          orderBy('createdAt', 'desc'),
-          limit(5)
-        );
-        const invSnap = await getDocs(invQ);
+        const [invSnap, conSnap] = await Promise.all([
+          getDocs(query(collection(db, 'invoices'), where('userId', '==', user.uid), limit(20))),
+          getDocs(query(collection(db, 'contracts'), where('userId', '==', user.uid), limit(20)))
+        ]);
+
         const invoices = invSnap.docs
           .map(d => ({ id: d.id, type: 'invoice', ...d.data() }))
           .filter(inv => 
@@ -50,14 +48,6 @@ export default function Header() {
             (inv.invoiceNumber || '').toLowerCase().includes(q)
           );
 
-        // Rechercher dans les contrats
-        const conQ = query(
-          collection(db, 'contracts'),
-          where('userId', '==', user.uid),
-          orderBy('createdAt', 'desc'),
-          limit(5)
-        );
-        const conSnap = await getDocs(conQ);
         const contracts = conSnap.docs
           .map(d => ({ id: d.id, type: 'contract', ...d.data() }))
           .filter(c => 
@@ -68,6 +58,8 @@ export default function Header() {
         setSearchResults([...invoices, ...contracts].slice(0, 8));
       } catch (e) {
         console.error('Erreur recherche:', e);
+      } finally {
+        setSearchLoading(false);
       }
     };
 
@@ -80,16 +72,13 @@ export default function Header() {
     if (!user) return;
     const loadNotifications = async () => {
       try {
-        const invQ = query(
-          collection(db, 'invoices'),
-          where('userId', '==', user.uid),
-          orderBy('createdAt', 'desc'),
-          limit(5)
+        const snap = await getDocs(
+          query(collection(db, 'invoices'), where('userId', '==', user.uid), limit(10))
         );
-        const snap = await getDocs(invQ);
         const notifs = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(inv => inv.status === 'paid')
+          .sort((a, b) => new Date(b.paymentDate || b.updatedAt || b.createdAt) - new Date(a.paymentDate || a.updatedAt || a.createdAt))
           .map(inv => ({
             id: inv.id,
             title: 'Paiement reçu',
@@ -99,7 +88,7 @@ export default function Header() {
             link: `/invoices`
           }));
         setNotifications(notifs);
-        setUnreadCount(notifs.filter(n => !n.read).length);
+        setUnreadCount(notifs.length);
       } catch (e) { console.error('Erreur notifs:', e); }
     };
     loadNotifications();
@@ -113,14 +102,14 @@ export default function Header() {
   const handleSearchSelect = (item) => {
     setSearchOpen(false);
     setSearchQuery('');
-    if (item.type === 'invoice') navigate('/invoices');
-    else navigate('/contracts');
+    navigate(item.type === 'invoice' ? '/invoices' : '/contracts');
   };
 
   const getTimeAgo = (date) => {
     if (!date) return '';
     const diff = Date.now() - new Date(date).getTime();
     const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'À l\'instant';
     if (minutes < 60) return `Il y a ${minutes} min`;
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `Il y a ${hours}h`;
@@ -129,7 +118,6 @@ export default function Header() {
 
   return (
     <header className="h-16 bg-gray-900 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40">
-      {/* Left */}
       <div className="flex items-center gap-3">
         <Link to="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
@@ -139,9 +127,8 @@ export default function Header() {
         </Link>
       </div>
 
-      {/* Right */}
       <div className="flex items-center gap-1 sm:gap-3">
-        {/* Recherche */}
+        {/* RECHERCHE */}
         <div ref={searchRef} className="relative">
           <button 
             onClick={() => { setSearchOpen(!searchOpen); setNotifOpen(false); }}
@@ -159,7 +146,7 @@ export default function Header() {
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher factures, contrats, clients..."
+                    placeholder="Rechercher une facture, un contrat, un client..."
                     className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-gray-900 outline-none"
                     autoFocus
                   />
@@ -170,10 +157,14 @@ export default function Header() {
                   )}
                 </div>
               </div>
-              <div className="max-h-64 overflow-y-auto">
+              <div className="max-h-72 overflow-y-auto">
                 {searchQuery.trim() === '' ? (
                   <div className="p-4 text-center text-xs text-gray-400">
-                    Tapez pour rechercher...
+                    Tapez le nom d'un client ou un numéro de facture...
+                  </div>
+                ) : searchLoading ? (
+                  <div className="p-4 flex justify-center">
+                    <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"/>
                   </div>
                 ) : searchResults.length === 0 ? (
                   <div className="p-4 text-center text-xs text-gray-400">
@@ -184,35 +175,43 @@ export default function Header() {
                     <button
                       key={item.id}
                       onClick={() => handleSearchSelect(item)}
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 text-left border-b border-gray-50"
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 text-left border-b border-gray-50 transition-colors"
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.type === 'invoice' ? 'bg-blue-50' : 'bg-purple-50'}`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${item.type === 'invoice' ? 'bg-blue-50' : 'bg-purple-50'}`}>
                         <span className={`text-xs font-bold ${item.type === 'invoice' ? 'text-blue-600' : 'text-purple-600'}`}>
-                          {item.type === 'invoice' ? 'FA' : 'CO'}
+                          {item.type === 'invoice' ? '📄' : '📋'}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-gray-900 truncate">
-                          {item.type === 'invoice' ? item.invoiceNumber : item.title}
+                          {item.type === 'invoice' ? item.invoiceNumber : (item.title || 'Sans titre')}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">{item.clientName}</p>
+                        <p className="text-xs text-gray-500 truncate">{item.clientName || 'Client'}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         <p className="text-xs font-semibold text-gray-900">
                           {item.type === 'invoice' 
                             ? `${parseFloat(item.total || 0).toLocaleString()} XOF`
                             : `${parseInt(item.amount || 0).toLocaleString()} XOF`}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {item.type === 'invoice' ? 'Facture' : 'Contrat'}
                         </p>
                       </div>
                     </button>
                   ))
                 )}
               </div>
+              {searchResults.length > 0 && (
+                <div className="p-2 border-t border-gray-100 bg-gray-50 text-center">
+                  <span className="text-xs text-gray-500">{searchResults.length} résultat{searchResults.length > 1 ? 's' : ''}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Notifications */}
+        {/* NOTIFICATIONS */}
         <div ref={notifRef} className="relative">
           <button 
             onClick={() => { setNotifOpen(!notifOpen); setSearchOpen(false); }}
@@ -220,8 +219,8 @@ export default function Header() {
           >
             <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
-                {unreadCount}
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
@@ -232,19 +231,22 @@ export default function Header() {
                 <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                 {unreadCount > 0 && (
                   <button 
-                    onClick={() => { setNotifications(prev => prev.map(n => ({...n, read: true}))); setUnreadCount(0); }}
-                    className="text-xs text-gray-500 hover:text-gray-900"
+                    onClick={() => { 
+                      setNotifications(prev => prev.map(n => ({...n, read: true}))); 
+                      setUnreadCount(0); 
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800"
                   >
                     Tout marquer lu
                   </button>
                 )}
               </div>
-              <div className="max-h-64 overflow-y-auto">
+              <div className="max-h-72 overflow-y-auto">
                 {notifications.length === 0 ? (
                   <div className="p-6 text-center">
-                    <Bell size={24} className="text-gray-300 mx-auto mb-2" />
+                    <Bell size={28} className="text-gray-300 mx-auto mb-2" />
                     <p className="text-xs text-gray-400">Aucune notification</p>
-                    <p className="text-xs text-gray-400">Les paiements reçus apparaîtront ici</p>
+                    <p className="text-xs text-gray-400 mt-1">Les paiements reçus apparaîtront ici</p>
                   </div>
                 ) : (
                   notifications.map(notif => (
@@ -260,7 +262,7 @@ export default function Header() {
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <span className="text-emerald-600 text-xs">💰</span>
+                          <span className="text-emerald-600 text-sm">💰</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-gray-900">{notif.title}</p>
@@ -279,9 +281,12 @@ export default function Header() {
           )}
         </div>
 
-        {/* User */}
+        {/* USER */}
         <div className="relative">
-          <button onClick={() => { setDropdownOpen(!dropdownOpen); setSearchOpen(false); setNotifOpen(false); }} className="flex items-center gap-2 p-1.5 hover:bg-gray-800 rounded-lg transition-colors">
+          <button 
+            onClick={() => { setDropdownOpen(!dropdownOpen); setSearchOpen(false); setNotifOpen(false); }} 
+            className="flex items-center gap-2 p-1.5 hover:bg-gray-800 rounded-lg transition-colors"
+          >
             {user?.photoURL ? (
               <img src={user.photoURL} alt="" className="w-7 h-7 rounded-lg object-cover" />
             ) : (
@@ -291,7 +296,9 @@ export default function Header() {
                 </span>
               </div>
             )}
-            <span className="hidden sm:block text-sm text-gray-300">{user?.displayName?.split(' ')[0] || user?.email?.split('@')[0]}</span>
+            <span className="hidden sm:block text-sm text-gray-300">
+              {user?.displayName?.split(' ')[0] || user?.email?.split('@')[0]}
+            </span>
             <ChevronDown size={14} className="text-gray-500 hidden sm:block" />
           </button>
 
