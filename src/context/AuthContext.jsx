@@ -23,11 +23,14 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // Forcer le rechargement du token pour avoir les dernières données
+        await firebaseUser.getIdToken(true);
+        
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log('🔑 Rôle chargé:', userData.role); // Debug
+            console.log('🔑 AuthContext - Rôle chargé:', userData.role, '| Email:', firebaseUser.email);
             setUser({ ...firebaseUser, ...userData });
           } else {
             setUser({ ...firebaseUser, role: 'user' });
@@ -41,11 +44,18 @@ export function AuthProvider({ children }) {
       }
       setLoading(false);
     });
+
     return unsubscribe;
   }, []);
 
   const login = async (email, password) => {
     const result = await signInWithEmailAndPassword(auth, email, password);
+    // Forcer rechargement après login
+    const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      setUser(prev => ({ ...prev, ...result.user, ...userData }));
+    }
     return result;
   };
 
@@ -61,9 +71,14 @@ export function AuthProvider({ children }) {
           createdAt: new Date().toISOString(),
           role: 'user'
         });
+        setUser({ ...result.user, role: 'user' });
+      } else {
+        const userData = userDoc.data();
+        setUser({ ...result.user, ...userData });
       }
     } catch (error) {
       console.error('Erreur création user Google:', error);
+      setUser({ ...result.user, role: 'user' });
     }
     return result;
   };
@@ -76,10 +91,15 @@ export function AuthProvider({ children }) {
       createdAt: new Date().toISOString(),
       role: 'user'
     });
+    setUser({ ...result.user, ...userData, role: 'user' });
     return result;
   };
 
-  const logout = () => signOut(auth);
+  const logout = async () => {
+    await signOut(auth);
+    setUser(null);
+  };
+
   const resetPassword = (email) => sendPasswordResetEmail(auth, email);
 
   return (
