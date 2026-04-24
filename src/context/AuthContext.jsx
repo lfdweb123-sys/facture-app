@@ -27,14 +27,13 @@ export function AuthProvider({ children }) {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
+            console.log('🔑 Rôle chargé:', userData.role); // Debug
             setUser({ ...firebaseUser, ...userData });
           } else {
-            // Si le document n'existe pas (Google sign-in première fois)
             setUser({ ...firebaseUser, role: 'user' });
           }
         } catch (error) {
           console.error('Erreur chargement user:', error);
-          // En cas d'erreur, on met le user sans role (pas admin)
           setUser({ ...firebaseUser, role: 'user' });
         }
       } else {
@@ -42,7 +41,6 @@ export function AuthProvider({ children }) {
       }
       setLoading(false);
     });
-
     return unsubscribe;
   }, []);
 
@@ -53,7 +51,6 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
-    
     try {
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
       if (!userDoc.exists()) {
@@ -68,7 +65,6 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Erreur création user Google:', error);
     }
-    
     return result;
   };
 
@@ -84,21 +80,10 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => signOut(auth);
-
   const resetPassword = (email) => sendPasswordResetEmail(auth, email);
 
-  const value = {
-    user,
-    login,
-    loginWithGoogle,
-    register,
-    logout,
-    resetPassword,
-    loading
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle, register, logout, resetPassword, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

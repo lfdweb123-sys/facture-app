@@ -1,3 +1,6 @@
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
 export default function AdminRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -16,11 +19,10 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // DEBUG : afficher le rôle dans la console
-  console.log('AdminRoute - user:', user.email, 'role:', user.role);
+  console.log('👮 AdminRoute - email:', user.email, 'role:', user.role);
 
   if (!user.role || user.role !== 'admin') {
-    console.log('Accès admin refusé - rôle manquant ou incorrect');
+    console.log('⛔ Accès admin refusé');
     return <Navigate to="/dashboard" replace />;
   }
 
