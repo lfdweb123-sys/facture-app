@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../services/firebase';
-import { useAuth } from '../../context/AuthContext';
 import { 
-  Users, FileText, FileCheck, DollarSign, Shield, 
-  Clock, CheckCircle, AlertCircle, TrendingUp,
-  ChevronRight, Search
+  Users, FileText, FileCheck, DollarSign, 
+  Clock, CheckCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     verifiedUsers: 0,
@@ -20,7 +17,6 @@ export default function AdminDashboard() {
     totalInvoices: 0,
     totalContracts: 0,
     totalRevenue: 0,
-    recentUsers: [],
     pendingDocs: []
   });
   const [loading, setLoading] = useState(true);
@@ -52,7 +48,6 @@ export default function AdminDashboard() {
           totalInvoices: invoices.length,
           totalContracts: contracts.length,
           totalRevenue,
-          recentUsers: users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5),
           pendingDocs: pendingVerifications.slice(0, 5)
         });
       } catch (e) { console.error(e); }
@@ -65,11 +60,9 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Administration</h1>
-          <p className="text-xs text-gray-500">Gérez la plateforme Facture App</p>
-        </div>
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Administration</h1>
+        <p className="text-xs text-gray-500">Gérez la plateforme Facture App</p>
       </div>
 
       {/* Stats */}
@@ -80,7 +73,7 @@ export default function AdminDashboard() {
           { icon: Clock, label: 'En attente', value: stats.pendingVerifications, color: 'bg-amber-50 text-amber-600' },
           { icon: FileText, label: 'Factures', value: stats.totalInvoices, color: 'bg-purple-50 text-purple-600' },
           { icon: FileCheck, label: 'Contrats', value: stats.totalContracts, color: 'bg-indigo-50 text-indigo-600' },
-          { icon: DollarSign, label: 'Revenus', value: `${(stats.totalRevenue / 1000000).toFixed(1)}M`, color: 'bg-emerald-50 text-emerald-600' }
+          { icon: DollarSign, label: 'Revenus', value: `${(stats.totalRevenue / 1000000).toFixed(1)}M XOF`, color: 'bg-emerald-50 text-emerald-600' }
         ].map((s, i) => (
           <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
             <div className={`w-8 h-8 ${s.color} rounded-lg flex items-center justify-center mb-2`}><s.icon size={16}/></div>
@@ -93,11 +86,11 @@ export default function AdminDashboard() {
       {/* Vérifications en attente */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">🔍 Vérifications en attente ({stats.pendingVerifications})</h3>
-          <Link to="/admin/verifications" className="text-xs text-blue-600 hover:text-blue-800">Tout voir</Link>
+          <h3 className="text-sm font-semibold text-gray-900">Vérifications en attente ({stats.pendingVerifications})</h3>
+          <Link to="/admin/verifications" className="text-xs text-gray-900 hover:underline">Tout voir</Link>
         </div>
         {stats.pendingDocs.length === 0 ? (
-          <div className="p-6 text-center text-xs text-gray-400">Aucune vérification en attente</div>
+          <div className="p-8 text-center text-sm text-gray-400">Aucune vérification en attente</div>
         ) : (
           <div className="divide-y divide-gray-50">
             {stats.pendingDocs.map(u => (
@@ -108,10 +101,10 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900">{u.displayName || u.email}</p>
-                    <p className="text-xs text-gray-500">{u.verificationData?.documentType || 'Document'}</p>
+                    <p className="text-xs text-gray-500">{u.verificationData?.documentType || 'Document'} · {u.verificationData?.submittedAt ? format(new Date(u.verificationData.submittedAt), 'dd/MM/yy', {locale: fr}) : ''}</p>
                   </div>
                 </div>
-                <Link to={`/admin/verification/${u.id}`} className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-800">Examiner</Link>
+                <Link to="/admin/verifications" className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-800">Examiner</Link>
               </div>
             ))}
           </div>
@@ -119,14 +112,13 @@ export default function AdminDashboard() {
       </div>
 
       {/* Actions rapides */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
           { to: '/admin/users', icon: Users, label: 'Utilisateurs', desc: 'Gérer les comptes' },
-          { to: '/admin/verifications', icon: Shield, label: 'Vérifications', desc: 'Valider les documents' },
-          { to: '/admin/invoices', icon: FileText, label: 'Factures', desc: 'Voir toutes les factures' },
-          { to: '/admin/settings', icon: Search, label: 'Paramètres', desc: 'Configuration plateforme' }
+          { to: '/admin/verifications', icon: CheckCircle, label: 'Vérifications', desc: 'Valider les documents' },
+          { to: '/admin', icon: FileText, label: 'Factures', desc: 'Voir les statistiques' }
         ].map((a, i) => (
-          <Link key={i} to={a.to} className="bg-white rounded-xl border border-gray-100 p-4 hover:border-gray-200 hover:shadow-sm transition-all">
+          <Link key={i} to={a.to} className="bg-white rounded-xl border border-gray-100 p-4 hover:border-gray-200 transition-all">
             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mb-2"><a.icon size={14} className="text-gray-600"/></div>
             <h3 className="text-xs font-semibold text-gray-900">{a.label}</h3>
             <p className="text-xs text-gray-400 mt-0.5">{a.desc}</p>

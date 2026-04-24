@@ -8,6 +8,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const isVerified = user?.verificationStatus === 'approved';
+  const isAdmin = user?.role === 'admin';
 
   const menuItems = [
     { title: 'Dashboard', icon: Layout, path: '/dashboard', requireVerification: false },
@@ -29,6 +30,7 @@ export default function Sidebar() {
         </button>
         
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          {/* Menu principal */}
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
             const isDisabled = item.requireVerification && !isVerified;
@@ -62,6 +64,20 @@ export default function Sidebar() {
               {!collapsed && <span>Vérification</span>}
               {!collapsed && user?.verificationStatus==='pending' && <span className="ml-auto w-2 h-2 bg-amber-500 rounded-full animate-pulse"/>}
             </Link>
+          )}
+
+          {/* Séparateur + Menu Admin */}
+          {isAdmin && (
+            <>
+              <div className="pt-3 mt-3 border-t border-gray-100">
+                {!collapsed && <p className="px-3 text-xs text-gray-400 uppercase tracking-wider mb-2">Administration</p>}
+              </div>
+              <Link to="/admin"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${location.pathname.startsWith('/admin') && location.pathname === '/admin' ? 'bg-red-50 text-red-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} ${collapsed ? 'justify-center' : ''}`}>
+                <Shield size={20} className={location.pathname.startsWith('/admin') ? 'text-red-600' : 'text-gray-500'} />
+                {!collapsed && <span>Administration</span>}
+              </Link>
+            </>
           )}
         </nav>
         

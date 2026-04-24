@@ -3,45 +3,53 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Règle pour les utilisateurs
+    // Helper : vérifier si l'utilisateur est admin
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Utilisateurs : accessible par l'utilisateur lui-même OU par l'admin
     match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow delete: if request.auth != null && isAdmin();
       allow create: if request.auth != null;
     }
     
-    // Règle pour les factures
+    // Factures : lecture publique pour le paiement client
     match /invoices/{invoiceId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
     
-    // Règle pour les contrats
+    // Contrats
     match /contracts/{contractId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
     }
     
-    // Règle pour les conversations
+    // Conversations
     match /conversations/{conversationId} {
       allow read, create, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
     
-    // Règle pour les paiements
+    // Paiements
     match /payments/{paymentId} {
-      allow read, create, update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, create, update: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
     
-    // Règle pour les retraits
+    // Retraits
     match /withdrawals/{withdrawalId} {
-      allow read, create, update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, create, update: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
     
-    // Règle par défaut : tout refuser (TOUJOURS EN DERNIER)
+    // Par défaut : refuser
     match /{document=**} {
       allow read, write: if false;
     }

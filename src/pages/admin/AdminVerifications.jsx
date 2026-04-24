@@ -13,14 +13,21 @@ export default function AdminVerifications() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  useEffect(() => {
-    const load = async () => {
-      const snap = await getDocs(collection(db, 'users'));
-      const pending = snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.verificationStatus==='pending');
-      setUsers(pending);
-      setLoading(false);
+useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        console.log('Utilisateurs chargés:', allUsers.length); // Debug
+        setUsers(allUsers);
+      } catch (error) {
+        console.error('Erreur chargement utilisateurs:', error);
+        toast.error('Erreur de chargement. Vérifiez les règles Firestore.');
+      } finally {
+        setLoading(false);
+      }
     };
-    load();
+    loadUsers();
   }, []);
 
   const handleVerification = async (userId, status) => {

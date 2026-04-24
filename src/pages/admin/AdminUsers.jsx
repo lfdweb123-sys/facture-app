@@ -12,11 +12,19 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
+useEffect(() => {
     const loadUsers = async () => {
-      const snap = await getDocs(collection(db, 'users'));
-      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        console.log('Utilisateurs chargés:', allUsers.length); // Debug
+        setUsers(allUsers);
+      } catch (error) {
+        console.error('Erreur chargement utilisateurs:', error);
+        toast.error('Erreur de chargement. Vérifiez les règles Firestore.');
+      } finally {
+        setLoading(false);
+      }
     };
     loadUsers();
   }, []);
