@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Layout, Users, Shield, ArrowLeft, LogOut, FileText } from 'lucide-react';
+import { Layout, Users, Shield, DollarSign, ArrowLeft, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -11,7 +11,8 @@ export default function AdminSidebar() {
   const adminMenuItems = [
     { title: 'Dashboard', icon: Layout, path: '/admin' },
     { title: 'Utilisateurs', icon: Users, path: '/admin/users' },
-    { title: 'Vérifications', icon: Shield, path: '/admin/verifications' }
+    { title: 'Vérifications', icon: Shield, path: '/admin/verifications' },
+    { title: 'Retraits', icon: DollarSign, path: '/admin/payouts' }
   ];
 
   return (
