@@ -1,6 +1,3 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-
 export default function AdminRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -19,8 +16,11 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Vérifier si l'utilisateur est admin (défini manuellement dans Firestore)
-  if (user.role !== 'admin') {
+  // DEBUG : afficher le rôle dans la console
+  console.log('AdminRoute - user:', user.email, 'role:', user.role);
+
+  if (!user.role || user.role !== 'admin') {
+    console.log('Accès admin refusé - rôle manquant ou incorrect');
     return <Navigate to="/dashboard" replace />;
   }
 
