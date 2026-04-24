@@ -1,120 +1,70 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { useAuth } from './context/AuthContext';
-import { Toaster } from 'react-hot-toast';
-import Header from './components/layout/Header';
-import Sidebar from './components/layout/Sidebar';
-import Home from './pages/Home';
-import LoginForm from './components/auth/LoginForm';
-import RegisterForm from './components/auth/RegisterForm';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import AdminRoute from './components/auth/AdminRoute';
-import Dashboard from './pages/Dashboard';
-import InvoiceForm from './components/invoices/InvoiceForm';
-import Invoices from './pages/Invoices';
-import ContractForm from './components/contracts/ContractForm';
-import Contracts from './pages/Contracts';
-import Payments from './pages/Payments';
-import WalletPage from './pages/Wallet';
-import Verification from './pages/Verification';
-import AIChat from './components/ai/AIChat';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import Subscription from './pages/Subscription';
-import Security from './pages/Security';
-import Updates from './pages/Updates';
-import Blog from './pages/Blog';
-import Help from './pages/Help';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import Cookies from './pages/Cookies';
-import Legal from './pages/Legal';
-import ApiDocumentation from './pages/ApiDocumentation';
-import Status from './pages/Status';
-import AdminLayout from './pages/admin/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminVerifications from './pages/admin/AdminVerifications';
+import { Link, useLocation } from 'react-router-dom';
+import { Layout, Users, Shield, DollarSign, ArrowLeft, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
-function PublicRoute({ children }) {
-  const { user } = useAuth();
-  if (user) return <Navigate to="/dashboard" />;
-  return children;
-}
-
-function AppContent() {
-  const { user } = useAuth();
+export default function AdminSidebar() {
+  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  
-  // Détecter si on est sur une page admin
-  const isAdminRoute = location.pathname.startsWith('/admin');
+  const { user, logout } = useAuth();
+
+  const adminMenuItems = [
+    { title: 'Dashboard', icon: Layout, path: '/admin' },
+    { title: 'Utilisateurs', icon: Users, path: '/admin/users' },
+    { title: 'Vérifications', icon: Shield, path: '/admin/verifications' },
+    { title: 'Retraits', icon: DollarSign, path: '/admin/payouts' }
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header : masqué sur les pages admin */}
-      {user && !isAdminRoute && <Header />}
-      
-      <div className="flex flex-1">
-        {/* Sidebar utilisateur : masquée sur les pages admin */}
-        {user && !isAdminRoute && <Sidebar />}
-        
-        <main className={`flex-1 ${user && !isAdminRoute ? 'lg:ml-64' : ''} ${user && !isAdminRoute ? 'pt-16 lg:pt-0 pb-16 lg:pb-0' : ''}`}>
-          <Routes>
-            {/* Pages publiques */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<PublicRoute><LoginForm /></PublicRoute>} />
-            <Route path="/register" element={<PublicRoute><RegisterForm /></PublicRoute>} />
-            <Route path="/pay" element={<Payments />} />
-            
-            {/* Pages info (accessibles sans connexion) */}
-            <Route path="/security" element={<Security />} />
-            <Route path="/updates" element={<Updates />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/cookies" element={<Cookies />} />
-            <Route path="/legal" element={<Legal />} />
-            <Route path="/api-documentation" element={<ApiDocumentation />} />
-            <Route path="/status" element={<Status />} />
-            
-            {/* Pages protégées (utilisateurs) */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-            <Route path="/invoices/new" element={<ProtectedRoute><InvoiceForm /></ProtectedRoute>} />
-            <Route path="/contracts" element={<ProtectedRoute><Contracts /></ProtectedRoute>} />
-            <Route path="/contracts/new" element={<ProtectedRoute><ContractForm /></ProtectedRoute>} />
-            <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
-            <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
-            <Route path="/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
-            <Route path="/ai-assistant" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
-            <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            
-            {/* Pages Admin (avec sidebar admin intégrée dans AdminLayout) */}
-            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="verifications" element={<AdminVerifications />} />
-            </Route>
-            
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
-          </Routes>
-        </main>
-      </div>
-      <Toaster position="top-right" />
-    </div>
-  );
-}
+    <>
+      <header className="h-16 bg-gray-900 flex items-center justify-between px-4 sm:px-6 fixed top-0 left-0 right-0 z-40 lg:pl-6">
+        <div className="flex items-center gap-3">
+          <Link to="/admin" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+              <Shield size={16} className="text-white" />
+            </div>
+            <span className="text-sm font-semibold text-white hidden sm:block">Administration</span>
+          </Link>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link to="/dashboard" className="text-sm text-gray-400 hover:text-white hidden sm:flex items-center gap-1">
+            <ArrowLeft size={14} /> Retour au site
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
+              <span className="text-xs font-bold text-white">{user?.displayName?.charAt(0) || 'A'}</span>
+            </div>
+            <span className="hidden sm:block text-sm text-gray-300">{user?.displayName?.split(' ')[0] || 'Admin'}</span>
+          </div>
+        </div>
+      </header>
 
-export default function App() {
-  return (
-    <Router>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </Router>
+      <aside className={`hidden lg:flex flex-col fixed left-0 top-16 bottom-0 bg-gray-900 text-white z-30 transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          {!collapsed && <p className="px-3 text-xs text-gray-400 uppercase tracking-wider mb-2 mt-2">Menu admin</p>}
+          {adminMenuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+            return (
+              <Link key={item.path} to={item.path} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'} ${collapsed ? 'justify-center' : ''}`}>
+                <Icon size={20} />
+                {!collapsed && <span>{item.title}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="p-3 border-t border-gray-800">
+          <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-all">
+            <ArrowLeft size={16} />
+            {!collapsed && <span>Retour au site</span>}
+          </Link>
+          {!collapsed && (
+            <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-red-400 hover:bg-gray-800 transition-all w-full mt-1">
+              <LogOut size={18} /> Déconnexion
+            </button>
+          )}
+        </div>
+      </aside>
+    </>
   );
 }
