@@ -8,7 +8,8 @@ const PLAN_LIMITS = {
     support: 'email',
     retraits: false,
     api: false,
-    maxUsers: 1
+    maxUsers: 1,
+    maxAIMessages: 10 // messages IA par mois pour le plan gratuit
   },
   pro: {
     maxInvoices: Infinity,
@@ -18,7 +19,8 @@ const PLAN_LIMITS = {
     support: 'priority',
     retraits: true,
     api: false,
-    maxUsers: 1
+    maxUsers: 1,
+    maxAIMessages: Infinity
   },
   business: {
     maxInvoices: Infinity,
@@ -28,102 +30,66 @@ const PLAN_LIMITS = {
     support: 'dedicated',
     retraits: true,
     api: true,
-    maxUsers: 5
+    maxUsers: 5,
+    maxAIMessages: Infinity
   }
 };
 
-// Obtenir le plan actuel de l'utilisateur
 export function getUserPlan(user) {
   return user?.subscription?.plan || 'free';
 }
 
-// Obtenir les limites du plan
 export function getPlanLimits(plan) {
   return PLAN_LIMITS[plan] || PLAN_LIMITS.free;
 }
 
-// Vérifier si l'utilisateur peut créer une facture
 export async function canCreateInvoice(user, currentCount) {
   const plan = getUserPlan(user);
   const limits = getPlanLimits(plan);
-  const count = currentCount || 0;
-  
-  if (count >= limits.maxInvoices) {
-    return { 
-      allowed: false, 
-      message: `Limite de ${limits.maxInvoices} factures atteinte. Passez au plan Pro pour des factures illimitées.`,
-      upgradeTo: 'pro'
-    };
+  if (currentCount >= limits.maxInvoices) {
+    return { allowed: false, message: `Limite de ${limits.maxInvoices} factures atteinte. Passez au plan Pro.`, upgradeTo: 'pro' };
   }
   return { allowed: true };
 }
 
-// Vérifier si l'utilisateur peut créer un contrat
 export async function canCreateContract(user, currentCount) {
   const plan = getUserPlan(user);
   const limits = getPlanLimits(plan);
-  const count = currentCount || 0;
-  
-  if (count >= limits.maxContracts) {
-    return { 
-      allowed: false, 
-      message: `Limite de ${limits.maxContracts} contrats atteinte. Passez au plan Pro pour des contrats illimités.`,
-      upgradeTo: 'pro'
-    };
+  if (currentCount >= limits.maxContracts) {
+    return { allowed: false, message: `Limite de ${limits.maxContracts} contrats atteinte. Passez au plan Pro.`, upgradeTo: 'pro' };
   }
   return { allowed: true };
 }
 
-// Vérifier si l'utilisateur peut utiliser les retraits
 export function canWithdraw(user) {
-  const plan = getUserPlan(user);
-  const limits = getPlanLimits(plan);
-  return {
-    allowed: limits.retraits,
-    message: limits.retraits ? '' : 'Les retraits sont réservés aux plans Pro et Business.',
-    upgradeTo: 'pro'
-  };
+  const limits = getPlanLimits(getUserPlan(user));
+  return { allowed: limits.retraits, message: limits.retraits ? '' : 'Retraits réservés aux plans Pro et Business.', upgradeTo: 'pro' };
 }
 
-// Vérifier si l'utilisateur peut utiliser l'API
 export function canUseApi(user) {
-  const plan = getUserPlan(user);
-  const limits = getPlanLimits(plan);
-  return {
-    allowed: limits.api,
-    message: limits.api ? '' : 'L\'API est réservée au plan Business.',
-    upgradeTo: 'business'
-  };
+  const limits = getPlanLimits(getUserPlan(user));
+  return { allowed: limits.api, message: limits.api ? '' : 'API réservée au plan Business.', upgradeTo: 'business' };
 }
 
-// Vérifier si l'utilisateur peut utiliser l'IA complète
 export function canUseFullAI(user) {
-  const plan = getUserPlan(user);
-  const limits = getPlanLimits(plan);
+  const limits = getPlanLimits(getUserPlan(user));
   return {
-    allowed: limits.ai === 'full' || limits.ai === 'full+',
-    message: limits.ai === 'basic' ? 'L\'IA complète est réservée aux plans Pro et Business.' : '',
+    allowed: true, // L'IA est accessible à tous, mais limitée en nombre de messages pour le plan gratuit
     level: limits.ai,
+    maxMessages: limits.maxAIMessages,
+    message: limits.ai === 'basic' ? 'IA basique (10 messages/mois). Passez en Pro pour illimité.' : '',
     upgradeTo: 'pro'
   };
 }
 
-// Vérifier si l'utilisateur peut utiliser les paiements illimités
 export function canUseUnlimitedPayments(user) {
-  const plan = getUserPlan(user);
-  const limits = getPlanLimits(plan);
-  return {
-    allowed: limits.payments === 'unlimited',
-    message: limits.payments === 'limited' ? 'Paiements limités sur le plan Gratuit.' : '',
-    upgradeTo: 'pro'
-  };
+  const limits = getPlanLimits(getUserPlan(user));
+  return { allowed: limits.payments === 'unlimited', message: limits.payments === 'limited' ? 'Paiements limités sur le plan Gratuit.' : '', upgradeTo: 'pro' };
 }
 
-// Obtenir toutes les restrictions actuelles
 export function getUserRestrictions(user) {
   const plan = getUserPlan(user);
   const limits = getPlanLimits(plan);
-  
   return {
     plan,
     limits,
@@ -133,6 +99,7 @@ export function getUserRestrictions(user) {
     canUseApi: limits.api,
     canUseFullAI: limits.ai !== 'basic',
     aiLevel: limits.ai,
+    aiMaxMessages: limits.maxAIMessages,
     paymentsType: limits.payments,
     supportType: limits.support,
     maxUsers: limits.maxUsers
