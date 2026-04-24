@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
@@ -44,12 +44,21 @@ function PublicRoute({ children }) {
 
 function AppContent() {
   const { user } = useAuth();
+  const location = useLocation();
+  
+  // Détecter si on est sur une page admin
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {user && <Header />}
+      {/* Header : masqué sur les pages admin */}
+      {user && !isAdminRoute && <Header />}
+      
       <div className="flex flex-1">
-        {user && <Sidebar />}
-        <main className={`flex-1 ${user ? 'lg:ml-64' : ''} ${user ? 'pt-16 lg:pt-0 pb-16 lg:pb-0' : ''}`}>
+        {/* Sidebar utilisateur : masquée sur les pages admin */}
+        {user && !isAdminRoute && <Sidebar />}
+        
+        <main className={`flex-1 ${user && !isAdminRoute ? 'lg:ml-64' : ''} ${user && !isAdminRoute ? 'pt-16 lg:pt-0 pb-16 lg:pb-0' : ''}`}>
           <Routes>
             {/* Pages publiques */}
             <Route path="/" element={<Home />} />
@@ -69,7 +78,7 @@ function AppContent() {
             <Route path="/api-documentation" element={<ApiDocumentation />} />
             <Route path="/status" element={<Status />} />
             
-            {/* Pages protégées */}
+            {/* Pages protégées (utilisateurs) */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
             <Route path="/invoices/new" element={<ProtectedRoute><InvoiceForm /></ProtectedRoute>} />
@@ -83,7 +92,7 @@ function AppContent() {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             
-            {/* Pages Admin */}
+            {/* Pages Admin (avec sidebar admin intégrée dans AdminLayout) */}
             <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
@@ -101,5 +110,11 @@ function AppContent() {
 }
 
 export default function App() {
-  return <Router><AuthProvider><AppContent /></AuthProvider></Router>;
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </Router>
+  );
 }
