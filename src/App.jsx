@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import AdminRoute from './components/auth/AdminRoute';
 import Dashboard from './pages/Dashboard';
 import InvoiceForm from './components/invoices/InvoiceForm';
 import Invoices from './pages/Invoices';
@@ -30,6 +31,10 @@ import Cookies from './pages/Cookies';
 import Legal from './pages/Legal';
 import ApiDocumentation from './pages/ApiDocumentation';
 import Status from './pages/Status';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminVerifications from './pages/admin/AdminVerifications';
 
 function PublicRoute({ children }) {
   const { user } = useAuth();
@@ -77,6 +82,13 @@ function AppContent() {
             <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            
+            {/* Pages Admin */}
+            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="verifications" element={<AdminVerifications />} />
+            </Route>
             
             {/* Fallback */}
             <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
