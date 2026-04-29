@@ -2,28 +2,54 @@ export default function Legal() {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Mentions Légales</h1>
-        <p className="text-xs text-gray-500 mt-0.5">Informations légales de Facture App</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Mentions légales</h1>
       </div>
+
       <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 prose prose-sm max-w-none text-gray-600 space-y-4">
-        <h3 className="text-gray-900 font-semibold">Éditeur</h3>
-        <p>Facture App est éditée par Facture App SARL, société de droit béninois au capital de 1 000 000 XOF.</p>
-        <p>RCCM : RB/COT/24-B-12345 | IFU : 3202412345678</p>
-        <p>Siège social : Cotonou, Littoral, Bénin</p>
         
-        <h3 className="text-gray-900 font-semibold">Contact</h3>
-        <p>Email : contact@factureapp.com</p>
-        <p>Téléphone : +229 97 00 00 00</p>
-        
-        <h3 className="text-gray-900 font-semibold">Directeur de publication</h3>
-        <p>Gérard Sononkpon, Gérant de Facture App SARL</p>
-        
-        <h3 className="text-gray-900 font-semibold">Hébergement</h3>
-        <p>Vercel Inc. - 340 S Lemon Ave #4133, Walnut, CA 91789, USA</p>
-        <p>Firebase (Google Cloud) - Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA</p>
-        
+        <h3 className="text-gray-900 font-semibold">Présentation du site</h3>
+        <p>
+          Ce site propose des services en ligne accessibles aux utilisateurs via internet.
+          L’utilisation du site implique l’acceptation des conditions décrites ci-dessous.
+        </p>
+
+        <h3 className="text-gray-900 font-semibold">Accès au service</h3>
+        <p>
+          Le site est accessible à tout moment, sauf interruption pour maintenance,
+          mise à jour ou cas de force majeure.
+        </p>
+
+        <h3 className="text-gray-900 font-semibold">Responsabilité</h3>
+        <p>
+          Les informations fournies sur le site sont données à titre indicatif.
+          L’éditeur ne peut être tenu responsable des erreurs, omissions ou
+          indisponibilités du service.
+        </p>
+
+        <h3 className="text-gray-900 font-semibold">Données personnelles</h3>
+        <p>
+          Les données collectées sont utilisées uniquement dans le cadre du service.
+          Elles ne sont pas vendues ni cédées à des tiers sans consentement.
+        </p>
+
+        <h3 className="text-gray-900 font-semibold">Cookies</h3>
+        <p>
+          Le site peut utiliser des cookies pour améliorer l’expérience utilisateur
+          et analyser l’utilisation du service.
+        </p>
+
         <h3 className="text-gray-900 font-semibold">Propriété intellectuelle</h3>
-        <p>Le nom "Facture App", le logo et l'ensemble des contenus de la plateforme sont la propriété exclusive de Facture App SARL. Toute reproduction est interdite sans autorisation.</p>
+        <p>
+          Les contenus présents sur le site (textes, images, éléments graphiques)
+          sont protégés. Toute reproduction ou utilisation sans autorisation est interdite.
+        </p>
+
+        <h3 className="text-gray-900 font-semibold">Modification</h3>
+        <p>
+          Les présentes mentions légales peuvent être modifiées à tout moment.
+          Les utilisateurs sont invités à les consulter régulièrement.
+        </p>
+
       </div>
     </div>
   );
